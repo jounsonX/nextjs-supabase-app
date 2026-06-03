@@ -5,10 +5,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 개발 명령어
 
 ```bash
-npm run dev      # 개발 서버 시작 (http://localhost:3000)
-npm run build    # 프로덕션 빌드
-npm run start    # 빌드된 앱 실행
-npm run lint     # ESLint 코드 검사
+npm run dev           # 개발 서버 시작 (http://localhost:3000)
+npm run build         # 프로덕션 빌드
+npm run start         # 빌드된 앱 실행
+npm run lint          # ESLint 검사
+npm run lint:fix      # ESLint 자동 수정
+npm run format        # Prettier 포맷 적용 (전체)
+npm run format:check  # Prettier 포맷 검사 (CI용)
+npm run type-check    # TypeScript 타입 체크
 ```
 
 환경 변수 설정 (`.env.local`):
@@ -42,6 +46,31 @@ Next.js 15 App Router + Supabase 기반 풀스택 앱. `@supabase/ssr`로 쿠키
 - `components/` — 인증 폼, 프로필 폼 등 기능 컴포넌트
 - `app/protected/profile/actions.ts` — 프로필 조회/수정 Server Actions
 - `types/database.types.ts` — Supabase 테이블 타입 (`Profile`, `ProfileUpdate`)
+
+## 개발 도구
+
+### 코드 품질 도구
+
+- **ESLint** — Flat Config (`eslint.config.mjs`), `next/core-web-vitals` + `next/typescript` 기반
+  - `eslint-plugin-unused-imports`: 미사용 import 커밋 전 자동 제거 (`eslint --fix`)
+  - `eslint-config-prettier`: Prettier와 충돌하는 ESLint 규칙 비활성화
+- **Prettier** — `.prettierrc` 설정 (이중 따옴표, 세미콜론, LF, 2칸 스페이스)
+  - `prettier-plugin-tailwindcss`: Tailwind 클래스 자동 정렬
+
+### Git 훅
+
+- **Husky v9** + **lint-staged**: pre-commit 시 스테이징된 파일에만 자동 실행
+  - `*.{ts,tsx}`: `eslint --fix` → `prettier --write`
+  - `*.{js,mjs,cjs}`: `prettier --write`
+  - `*.{json,md,css}`: `prettier --write`
+
+### 코드 스타일 규칙
+
+- 따옴표: 이중 따옴표
+- 세미콜론: 항상 사용
+- 들여쓰기: 2칸 스페이스
+- 줄 끝: LF (`.gitattributes`로 강제 — Windows `core.autocrlf=true` 무력화)
+- TypeScript: `type` 키워드 선호, `import type` 명시
 
 ## 핵심 패턴
 
