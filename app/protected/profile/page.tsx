@@ -10,16 +10,16 @@ async function ProfileContent() {
 
 export default function ProfilePage() {
   return (
-    <div className="flex-1 w-full flex flex-col gap-12">
+    <div className="flex w-full flex-1 flex-col gap-12">
       <div className="w-full">
-        <div className="bg-accent text-sm p-3 px-5 rounded-md text-foreground flex gap-3 items-center">
+        <div className="flex items-center gap-3 rounded-md bg-accent p-3 px-5 text-sm text-foreground">
           <UserIcon size="16" strokeWidth={2} />
           프로필 정보를 확인하고 수정할 수 있습니다.
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 items-start">
-        <h2 className="font-bold text-2xl mb-4">내 프로필</h2>
+      <div className="flex flex-col items-start gap-2">
+        <h2 className="mb-4 text-2xl font-bold">내 프로필</h2>
         <div className="w-full max-w-md">
           <Suspense
             fallback={

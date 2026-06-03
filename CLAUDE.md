@@ -12,6 +12,7 @@ npm run lint     # ESLint 코드 검사
 ```
 
 환경 변수 설정 (`.env.local`):
+
 ```
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
