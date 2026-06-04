@@ -6,10 +6,20 @@ import { LayoutDashboard, Users, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ADMIN_NAV = [
-  { href: "/admin", label: "대시보드", icon: LayoutDashboard, exact: true },
-  { href: "/admin/users", label: "사용자 관리", icon: Users, exact: false },
   {
-    href: "/admin/events",
+    href: "/protected/admin",
+    label: "대시보드",
+    icon: LayoutDashboard,
+    exact: true,
+  },
+  {
+    href: "/protected/admin/users",
+    label: "사용자 관리",
+    icon: Users,
+    exact: false,
+  },
+  {
+    href: "/protected/admin/events",
     label: "모임 관리",
     icon: CalendarDays,
     exact: false,
