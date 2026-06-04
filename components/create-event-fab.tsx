@@ -10,7 +10,7 @@ const FAB_VISIBLE_PATHS = ["/protected", "/protected/events"];
 export function CreateEventFab() {
   const pathname = usePathname();
 
-  if (pathname.startsWith("/protected/admin")) return null;
+  if (pathname.startsWith("/admin")) return null;
   if (!FAB_VISIBLE_PATHS.includes(pathname)) return null;
 
   return (

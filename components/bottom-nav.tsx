@@ -19,7 +19,7 @@ const NAV_ITEMS = [
 export function BottomNav() {
   const pathname = usePathname();
 
-  if (pathname.startsWith("/protected/admin")) return null;
+  if (pathname.startsWith("/admin")) return null;
 
   return (
     <nav className="bg-background sticky bottom-0 z-50 flex h-14 w-full items-center justify-around border-t">
