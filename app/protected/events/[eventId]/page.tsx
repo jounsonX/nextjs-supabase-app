@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { MapPin, Calendar, DollarSign, Pin, Car } from "lucide-react";
+import { MapPin, Calendar, DollarSign, Pin, Car, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/events/status-badge";
 import { CapacityDisplay } from "@/components/events/capacity-display";
 import { ParticipantBadge } from "@/components/events/participant-badge";
+import { CarpoolRegisterButton } from "@/components/events/carpool-register-button";
 import { cn } from "@/lib/utils";
 import {
   getDummyEvent,
@@ -112,7 +113,9 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
         {activeTab === "settlement" && (
           <SettlementTab eventId={eventId} isHost={isHost} />
         )}
-        {activeTab === "carpool" && <CarpoolTab eventId={eventId} />}
+        {activeTab === "carpool" && (
+          <CarpoolTab eventId={eventId} isHost={isHost} />
+        )}
       </div>
     </div>
   );
@@ -188,7 +191,7 @@ function InfoTab({
         <div>
           {myStatus === null && (
             <Button className="w-full" disabled>
-              참여 신청 (Phase 3 연결 예정)
+              참여 신청
             </Button>
           )}
           {myStatus === "pending" && (
@@ -198,7 +201,7 @@ function InfoTab({
           )}
           {myStatus === "approved" && (
             <Button className="w-full" variant="secondary" disabled>
-              참여 중 (취소: Phase 3 연결 예정)
+              참여 중
             </Button>
           )}
           {myStatus === "waitlisted" && (
@@ -327,12 +330,24 @@ function AnnouncementsTab({
                     )}
                     <h4 className="text-sm font-semibold">{ann.title}</h4>
                   </div>
-                  <span className="text-muted-foreground shrink-0 text-xs">
-                    {new Date(ann.created_at).toLocaleDateString("ko-KR", {
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </span>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <span className="text-muted-foreground text-xs">
+                      {new Date(ann.created_at).toLocaleDateString("ko-KR", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
+                    {isHost && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0"
+                        disabled
+                      >
+                        <Trash2 size={13} />
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <Separator className="my-2" />
                 <p className="text-muted-foreground text-sm whitespace-pre-wrap">
@@ -427,15 +442,13 @@ function SettlementTab({
 
 // ─── 카풀 탭 ────────────────────────────────────────────────────────────────
 
-function CarpoolTab({ eventId }: { eventId: string }) {
+function CarpoolTab({ eventId, isHost }: { eventId: string; isHost: boolean }) {
   const carpools = getDummyCarpools(eventId);
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
-        <Button variant="outline" size="sm" disabled>
-          + 카풀 등록 (Phase 3 연결 예정)
-        </Button>
+        {isHost && <CarpoolRegisterButton eventId={eventId} />}
       </div>
       {carpools.length === 0 ? (
         <p className="text-muted-foreground text-sm">등록된 카풀이 없습니다.</p>
@@ -485,7 +498,7 @@ function CarpoolTab({ eventId }: { eventId: string }) {
                     >
                       {carpool.remaining_seats === 0
                         ? "자리 없음"
-                        : "동승 신청 (Phase 3 연결 예정)"}
+                        : "동승 신청"}
                     </Button>
                   </div>
                 </CardContent>

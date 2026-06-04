@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -28,7 +29,7 @@ export default async function NewAnnouncementPage({ params }: Props) {
           <CardTitle className="text-base">공지 내용 입력</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* TODO: Phase 2 — createAnnouncement Server Action 연결 */}
+          {/* TODO: Phase 3 — createAnnouncement Server Action 연결 */}
           <form className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="title">공지 제목 *</Label>
@@ -41,12 +42,11 @@ export default async function NewAnnouncementPage({ params }: Props) {
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="content">내용 *</Label>
-              <textarea
+              <Textarea
                 id="content"
                 name="content"
                 rows={6}
                 placeholder="공지 내용을 입력하세요"
-                className="border-input bg-background placeholder:text-muted-foreground focus-visible:ring-ring flex w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
 
