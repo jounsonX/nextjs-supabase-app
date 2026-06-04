@@ -1,6 +1,14 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { EventCard } from "@/components/events/event-card";
 import { cn } from "@/lib/utils";
+import {
+  getDummyHostedEvents,
+  getDummyJoinedEvents,
+  getDummyEvent,
+  getDummyApprovedCount,
+  getDummyMyStatus,
+} from "@/lib/dummy";
 
 type Props = {
   searchParams: Promise<{ tab?: string }>;
@@ -9,6 +17,12 @@ type Props = {
 export default async function EventsPage({ searchParams }: Props) {
   const { tab } = await searchParams;
   const activeTab = tab === "joined" ? "joined" : "hosting";
+
+  const hostedEvents = getDummyHostedEvents();
+  const joinedEventIds = getDummyJoinedEvents();
+  const joinedEvents = joinedEventIds
+    .map((id) => getDummyEvent(id))
+    .filter((e) => e !== null);
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -49,19 +63,38 @@ export default async function EventsPage({ searchParams }: Props) {
 
       {/* 탭 콘텐츠 */}
       {activeTab === "hosting" && (
-        <div>
-          {/* TODO: Phase 2 — 모임 카드 그리드 */}
-          <p className="text-muted-foreground text-sm">
-            아직 주최한 모임이 없습니다.
-          </p>
+        <div className="flex flex-col gap-3">
+          {hostedEvents.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              아직 주최한 모임이 없습니다.
+            </p>
+          ) : (
+            hostedEvents.map((event) => (
+              <EventCard
+                key={event.id}
+                event={event}
+                participantCount={getDummyApprovedCount(event.id)}
+              />
+            ))
+          )}
         </div>
       )}
       {activeTab === "joined" && (
-        <div>
-          {/* TODO: Phase 2 — 참여 모임 카드 그리드 */}
-          <p className="text-muted-foreground text-sm">
-            아직 참여한 모임이 없습니다.
-          </p>
+        <div className="flex flex-col gap-3">
+          {joinedEvents.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              아직 참여한 모임이 없습니다.
+            </p>
+          ) : (
+            joinedEvents.map((event) => (
+              <EventCard
+                key={event.id}
+                event={event}
+                participantCount={getDummyApprovedCount(event.id)}
+                myStatus={getDummyMyStatus(event.id)}
+              />
+            ))
+          )}
         </div>
       )}
     </div>

@@ -2,7 +2,15 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function NewEventPage() {
   return (
@@ -21,7 +29,7 @@ export default function NewEventPage() {
           <CardTitle className="text-base">모임 정보 입력</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* TODO: Phase 2 — createEvent Server Action 연결 */}
+          {/* TODO: Phase 3 — createEvent Server Action 연결 */}
           <form className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="title">모임 제목 *</Label>
@@ -68,26 +76,25 @@ export default function NewEventPage() {
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="description">설명</Label>
-              <textarea
+              <Textarea
                 id="description"
                 name="description"
                 rows={4}
                 placeholder="모임에 대한 설명을 입력하세요"
-                className="border-input bg-background placeholder:text-muted-foreground focus-visible:ring-ring flex w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="status">상태</Label>
-              <select
-                id="status"
-                name="status"
-                defaultValue="open"
-                className="border-input bg-background focus-visible:ring-ring flex h-9 w-full rounded-md border px-3 py-1 text-sm focus-visible:ring-2 focus-visible:outline-none"
-              >
-                <option value="open">공개 (신청 가능)</option>
-                <option value="closed">마감</option>
-              </select>
+              <Select name="status" defaultValue="open">
+                <SelectTrigger id="status">
+                  <SelectValue placeholder="상태 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="open">공개 (신청 가능)</SelectItem>
+                  <SelectItem value="closed">마감</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <Button type="submit" className="mt-2">
