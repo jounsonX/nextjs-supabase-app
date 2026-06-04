@@ -1,0 +1,98 @@
+import type { Profile } from "@/types/database.types";
+
+export const CURRENT_USER_ID = "user-host-001";
+
+export const DUMMY_USERS: Profile[] = [
+  {
+    id: "user-host-001",
+    username: "kimhost",
+    full_name: "김주최",
+    avatar_url: null,
+    website: null,
+    bio: "수영과 헬스를 좋아하는 모임 주최자입니다.",
+    role: "host",
+    created_at: "2026-01-10T09:00:00Z",
+    updated_at: "2026-01-10T09:00:00Z",
+  },
+  {
+    id: "user-mbr-001",
+    username: "leealice",
+    full_name: "이앨리스",
+    avatar_url: null,
+    website: null,
+    bio: null,
+    role: "member",
+    created_at: "2026-01-15T10:00:00Z",
+    updated_at: "2026-01-15T10:00:00Z",
+  },
+  {
+    id: "user-mbr-002",
+    username: "parkbob",
+    full_name: "박밥",
+    avatar_url: null,
+    website: null,
+    bio: null,
+    role: "member",
+    created_at: "2026-01-20T11:00:00Z",
+    updated_at: "2026-01-20T11:00:00Z",
+  },
+  {
+    id: "user-mbr-003",
+    username: "choicarol",
+    full_name: "최캐롤",
+    avatar_url: null,
+    website: null,
+    bio: null,
+    role: "member",
+    created_at: "2026-02-01T09:30:00Z",
+    updated_at: "2026-02-01T09:30:00Z",
+  },
+  {
+    id: "user-mbr-004",
+    username: "jungdave",
+    full_name: "정데이브",
+    avatar_url: null,
+    website: null,
+    bio: null,
+    role: "member",
+    created_at: "2026-02-05T14:00:00Z",
+    updated_at: "2026-02-05T14:00:00Z",
+  },
+  {
+    id: "user-mbr-005",
+    username: "kangeve",
+    full_name: "강이브",
+    avatar_url: null,
+    website: null,
+    bio: null,
+    role: "member",
+    created_at: "2026-02-10T16:00:00Z",
+    updated_at: "2026-02-10T16:00:00Z",
+  },
+  {
+    id: "user-mbr-006",
+    username: "jofrank",
+    full_name: "조프랭크",
+    avatar_url: null,
+    website: null,
+    bio: null,
+    role: "member",
+    created_at: "2026-02-15T10:00:00Z",
+    updated_at: "2026-02-15T10:00:00Z",
+  },
+  {
+    id: "user-admin-001",
+    username: "admin",
+    full_name: "관리자",
+    avatar_url: null,
+    website: null,
+    bio: "플랫폼 운영자입니다.",
+    role: "admin",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+];
+
+export function getDummyUser(id: string): Profile | null {
+  return DUMMY_USERS.find((u) => u.id === id) ?? null;
+}
