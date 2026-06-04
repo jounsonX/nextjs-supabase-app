@@ -25,6 +25,7 @@ export function LoginForm({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isKakaoLoading, setIsKakaoLoading] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -44,6 +45,27 @@ export function LoginForm({
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleKakaoLogin = async () => {
+    const supabase = createClient();
+    setIsKakaoLoading(true);
+    setError(null);
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "kakao",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) throw error;
+    } catch (error: unknown) {
+      setError(
+        error instanceof Error ? error.message : "카카오 로그인에 실패했습니다"
+      );
+      setIsKakaoLoading(false);
     }
   };
 
@@ -85,7 +107,7 @@ export function LoginForm({
               variant="outline"
               className="w-full"
               onClick={handleGoogleLogin}
-              disabled={isGoogleLoading || isLoading}
+              disabled={isGoogleLoading || isLoading || isKakaoLoading}
             >
               {isGoogleLoading ? (
                 "Redirecting..."
@@ -118,12 +140,35 @@ export function LoginForm({
               )}
             </Button>
 
+            <Button
+              type="button"
+              className="w-full border-0 bg-[#FEE500] text-[#000000] hover:bg-[#FDD835]"
+              onClick={handleKakaoLogin}
+              disabled={isKakaoLoading || isLoading || isGoogleLoading}
+            >
+              {isKakaoLoading ? (
+                "Redirecting..."
+              ) : (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    className="mr-2 h-4 w-4"
+                    fill="#000000"
+                  >
+                    <path d="M12 3C6.477 3 2 6.477 2 10.5c0 2.572 1.607 4.836 4.037 6.207L5.1 20.1a.5.5 0 0 0 .72.55l4.494-2.99A11.6 11.6 0 0 0 12 18c5.523 0 10-3.477 10-7.5S17.523 3 12 3z" />
+                  </svg>
+                  Login with Kakao
+                </>
+              )}
+            </Button>
+
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
+                <span className="bg-background text-muted-foreground px-2">
                   Or continue with
                 </span>
               </div>
@@ -165,7 +210,7 @@ export function LoginForm({
               <Button
                 type="submit"
                 className="w-full"
-                disabled={isLoading || isGoogleLoading}
+                disabled={isLoading || isGoogleLoading || isKakaoLoading}
               >
                 {isLoading ? "Logging in..." : "Login"}
               </Button>

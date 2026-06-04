@@ -1,11 +1,14 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { updateProfile } from "@/app/protected/profile/actions";
 import type { Profile, ProfileFormState } from "@/types/database.types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge, type BadgeProps } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Card,
   CardContent,
@@ -20,6 +23,18 @@ interface ProfileFormProps {
   className?: string;
 }
 
+const ROLE_LABEL: Record<string, string> = {
+  admin: "관리자",
+  host: "호스트",
+  member: "회원",
+};
+
+const ROLE_VARIANT: Record<string, BadgeProps["variant"]> = {
+  admin: "destructive",
+  host: "default",
+  member: "secondary",
+};
+
 const initialState: ProfileFormState = { success: false, message: "" };
 
 export function ProfileForm({ profile, className }: ProfileFormProps) {
@@ -27,6 +42,13 @@ export function ProfileForm({ profile, className }: ProfileFormProps) {
     updateProfile,
     initialState
   );
+  const [avatarPreview, setAvatarPreview] = useState(profile.avatar_url ?? "");
+
+  const role = profile.role ?? "member";
+  const roleLabel = ROLE_LABEL[role] ?? role;
+  const roleVariant = ROLE_VARIANT[role] ?? "secondary";
+  const fallback =
+    (profile.username ?? profile.full_name ?? "?")[0]?.toUpperCase() ?? "?";
 
   return (
     <div className={cn("flex flex-col gap-6", className)}>
@@ -38,6 +60,19 @@ export function ProfileForm({ profile, className }: ProfileFormProps) {
         <CardContent>
           <form action={formAction}>
             <div className="flex flex-col gap-6">
+              {/* 아바타 미리보기 */}
+              <div className="flex items-center gap-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage src={avatarPreview} alt="프로필 미리보기" />
+                  <AvatarFallback className="text-lg">
+                    {fallback}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="text-muted-foreground text-sm">
+                  아래 URL을 입력하면 미리보기가 업데이트됩니다.
+                </div>
+              </div>
+
               <div className="grid gap-2">
                 <Label htmlFor="username">사용자 이름</Label>
                 <Input
@@ -67,7 +102,8 @@ export function ProfileForm({ profile, className }: ProfileFormProps) {
                   name="avatar_url"
                   type="url"
                   placeholder="https://example.com/avatar.png"
-                  defaultValue={profile.avatar_url ?? ""}
+                  value={avatarPreview}
+                  onChange={(e) => setAvatarPreview(e.target.value)}
                 />
               </div>
 
@@ -84,14 +120,24 @@ export function ProfileForm({ profile, className }: ProfileFormProps) {
 
               <div className="grid gap-2">
                 <Label htmlFor="bio">소개</Label>
-                <textarea
+                <Textarea
                   id="bio"
                   name="bio"
                   rows={3}
                   placeholder="자기소개를 입력하세요"
                   defaultValue={profile.bio ?? ""}
-                  className="flex min-h-[72px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                 />
+              </div>
+
+              {/* 계정 역할 (읽기 전용) */}
+              <div className="grid gap-2">
+                <Label>계정 역할</Label>
+                <div className="flex items-center gap-2">
+                  <Badge variant={roleVariant}>{roleLabel}</Badge>
+                  <span className="text-muted-foreground text-xs">
+                    역할은 관리자에 의해 변경됩니다.
+                  </span>
+                </div>
               </div>
 
               {state.message && (
