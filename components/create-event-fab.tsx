@@ -17,7 +17,7 @@ export function CreateEventFab() {
     <Link
       href="/protected/events/new"
       className={cn(
-        "fixed right-4 bottom-20 z-50",
+        "absolute right-4 bottom-20 z-50",
         "flex h-14 w-14 items-center justify-center",
         "bg-primary rounded-full shadow-lg",
         "text-primary-foreground",

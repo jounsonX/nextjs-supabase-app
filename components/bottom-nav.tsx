@@ -22,7 +22,7 @@ export function BottomNav() {
   if (pathname.startsWith("/protected/admin")) return null;
 
   return (
-    <nav className="bg-background fixed bottom-0 z-50 flex h-14 w-full items-center justify-around border-t">
+    <nav className="bg-background sticky bottom-0 z-50 flex h-14 w-full items-center justify-around border-t">
       {NAV_ITEMS.map(({ href, label, icon: Icon, exact }) => {
         const isActive = exact ? pathname === href : pathname.startsWith(href);
         return (
