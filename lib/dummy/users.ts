@@ -1,6 +1,6 @@
 import type { Profile } from "@/types/database.types";
 
-export const CURRENT_USER_ID = "user-host-001";
+export const CURRENT_USER_ID = "user-admin-001";
 
 export const DUMMY_USERS: Profile[] = [
   {
