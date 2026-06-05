@@ -95,10 +95,8 @@ export function LoginForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>
-            Enter your email below to login to your account
-          </CardDescription>
+          <CardTitle className="text-2xl">로그인</CardTitle>
+          <CardDescription>이메일로 계정에 로그인하세요</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4">
@@ -110,7 +108,7 @@ export function LoginForm({
               disabled={isGoogleLoading || isLoading || isKakaoLoading}
             >
               {isGoogleLoading ? (
-                "Redirecting..."
+                "이동 중..."
               ) : (
                 <>
                   <svg
@@ -135,7 +133,7 @@ export function LoginForm({
                       fill="#EA4335"
                     />
                   </svg>
-                  Login with Google
+                  Google로 로그인
                 </>
               )}
             </Button>
@@ -147,7 +145,7 @@ export function LoginForm({
               disabled={isKakaoLoading || isLoading || isGoogleLoading}
             >
               {isKakaoLoading ? (
-                "Redirecting..."
+                "이동 중..."
               ) : (
                 <>
                   <svg
@@ -158,7 +156,7 @@ export function LoginForm({
                   >
                     <path d="M12 3C6.477 3 2 6.477 2 10.5c0 2.572 1.607 4.836 4.037 6.207L5.1 20.1a.5.5 0 0 0 .72.55l4.494-2.99A11.6 11.6 0 0 0 12 18c5.523 0 10-3.477 10-7.5S17.523 3 12 3z" />
                   </svg>
-                  Login with Kakao
+                  Kakao로 로그인
                 </>
               )}
             </Button>
@@ -169,7 +167,7 @@ export function LoginForm({
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-background text-muted-foreground px-2">
-                  Or continue with
+                  또는 이메일로 계속
                 </span>
               </div>
             </div>
@@ -178,7 +176,7 @@ export function LoginForm({
           <form onSubmit={handleLogin} className="mt-4">
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">이메일</Label>
                 <Input
                   id="email"
                   type="email"
@@ -190,12 +188,12 @@ export function LoginForm({
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">비밀번호</Label>
                   <Link
                     href="/auth/forgot-password"
                     className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
                   >
-                    Forgot your password?
+                    비밀번호를 잊으셨나요?
                   </Link>
                 </div>
                 <Input
@@ -212,16 +210,16 @@ export function LoginForm({
                 className="w-full"
                 disabled={isLoading || isGoogleLoading || isKakaoLoading}
               >
-                {isLoading ? "Logging in..." : "Login"}
+                {isLoading ? "로그인 중..." : "로그인"}
               </Button>
             </div>
             <div className="mt-4 text-center text-sm">
-              Don&apos;t have an account?{" "}
+              계정이 없으신가요?{" "}
               <Link
                 href="/auth/sign-up"
                 className="underline underline-offset-4"
               >
-                Sign up
+                회원가입
               </Link>
             </div>
           </form>

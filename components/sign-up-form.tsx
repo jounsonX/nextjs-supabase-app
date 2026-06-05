@@ -36,7 +36,7 @@ export function SignUpForm({
     setError(null);
 
     if (password !== repeatPassword) {
-      setError("Passwords do not match");
+      setError("비밀번호가 일치하지 않습니다");
       setIsLoading(false);
       return;
     }
@@ -105,8 +105,8 @@ export function SignUpForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Sign up</CardTitle>
-          <CardDescription>Create a new account</CardDescription>
+          <CardTitle className="text-2xl">회원가입</CardTitle>
+          <CardDescription>새 계정을 만드세요</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4">
@@ -118,7 +118,7 @@ export function SignUpForm({
               disabled={isGoogleLoading || isLoading || isKakaoLoading}
             >
               {isGoogleLoading ? (
-                "Redirecting..."
+                "이동 중..."
               ) : (
                 <>
                   <svg
@@ -143,7 +143,7 @@ export function SignUpForm({
                       fill="#EA4335"
                     />
                   </svg>
-                  Sign up with Google
+                  Google로 회원가입
                 </>
               )}
             </Button>
@@ -155,7 +155,7 @@ export function SignUpForm({
               disabled={isKakaoLoading || isLoading || isGoogleLoading}
             >
               {isKakaoLoading ? (
-                "Redirecting..."
+                "이동 중..."
               ) : (
                 <>
                   <svg
@@ -166,7 +166,7 @@ export function SignUpForm({
                   >
                     <path d="M12 3C6.477 3 2 6.477 2 10.5c0 2.572 1.607 4.836 4.037 6.207L5.1 20.1a.5.5 0 0 0 .72.55l4.494-2.99A11.6 11.6 0 0 0 12 18c5.523 0 10-3.477 10-7.5S17.523 3 12 3z" />
                   </svg>
-                  Sign up with Kakao
+                  Kakao로 회원가입
                 </>
               )}
             </Button>
@@ -177,7 +177,7 @@ export function SignUpForm({
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-background text-muted-foreground px-2">
-                  Or continue with
+                  또는 이메일로 계속
                 </span>
               </div>
             </div>
@@ -186,7 +186,7 @@ export function SignUpForm({
           <form onSubmit={handleSignUp} className="mt-4">
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">이메일</Label>
                 <Input
                   id="email"
                   type="email"
@@ -198,7 +198,7 @@ export function SignUpForm({
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">비밀번호</Label>
                 </div>
                 <Input
                   id="password"
@@ -210,7 +210,7 @@ export function SignUpForm({
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center">
-                  <Label htmlFor="repeat-password">Repeat Password</Label>
+                  <Label htmlFor="repeat-password">비밀번호 확인</Label>
                 </div>
                 <Input
                   id="repeat-password"
@@ -226,13 +226,13 @@ export function SignUpForm({
                 className="w-full"
                 disabled={isLoading || isGoogleLoading || isKakaoLoading}
               >
-                {isLoading ? "Creating an account..." : "Sign up"}
+                {isLoading ? "가입 중..." : "회원가입"}
               </Button>
             </div>
             <div className="mt-4 text-center text-sm">
-              Already have an account?{" "}
+              이미 계정이 있으신가요?{" "}
               <Link href="/auth/login" className="underline underline-offset-4">
-                Login
+                로그인
               </Link>
             </div>
           </form>
