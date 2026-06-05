@@ -9,8 +9,9 @@ import { CapacityDisplay } from "@/components/events/capacity-display";
 import { ParticipantBadge } from "@/components/events/participant-badge";
 import { CarpoolRegisterButton } from "@/components/events/carpool-register-button";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/server";
+import { getEvent } from "@/app/protected/events/[eventId]/actions";
 import {
-  getDummyEvent,
   getDummyParticipants,
   getDummyAnnouncements,
   getDummyCarpools,
@@ -18,7 +19,6 @@ import {
   getDummyMyStatus,
   getDummyApprovedCount,
   getDummyUser,
-  CURRENT_USER_ID,
 } from "@/lib/dummy";
 
 type Props = {
@@ -50,10 +50,17 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
   const { tab } = await searchParams;
   const activeTab = tab ?? "info";
 
-  const event = getDummyEvent(eventId);
+  // 실제 Supabase에서 모임 데이터 조회
+  const event = await getEvent(eventId);
   if (!event) notFound();
 
-  const isHost = event.host_id === CURRENT_USER_ID;
+  // 현재 로그인 사용자로 isHost 판별
+  const supabase = await createClient();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const currentUserId = claimsData?.claims?.sub ?? null;
+  const isHost = currentUserId !== null && event.host_id === currentUserId;
+
+  // 참여자/정산 데이터는 Task 009~010에서 교체 예정 — 더미 유지
   const myStatus = getDummyMyStatus(eventId);
   const approvedCount = getDummyApprovedCount(eventId);
 
@@ -130,7 +137,13 @@ function InfoTab({
   myStatus,
   isHost,
 }: {
-  event: ReturnType<typeof getDummyEvent> & object;
+  event: {
+    event_date: string | null;
+    location: string | null;
+    cost: number;
+    max_capacity: number | null;
+    description: string | null;
+  };
   eventId: string;
   approvedCount: number;
   myStatus: ReturnType<typeof getDummyMyStatus>;

@@ -1,22 +1,20 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { EventCard } from "@/components/events/event-card";
-import {
-  getDummyHostedEvents,
-  getDummyJoinedEvents,
-  getDummyApprovedCount,
-  getDummyMyStatus,
-  getDummyEvent,
-} from "@/lib/dummy";
+import { getEvents } from "@/app/protected/events/actions";
 
-export default function ProtectedHomePage() {
-  const hostedEvents = getDummyHostedEvents();
-  const joinedEventIds = getDummyJoinedEvents();
-  const joinedEvents = joinedEventIds
-    .map((id) => getDummyEvent(id))
-    .filter((e) => e !== null)
-    // 홈에서는 내가 주최한 것 제외 (이미 위에 표시)
-    .filter((e) => !hostedEvents.some((h) => h.id === e.id));
+export default async function ProtectedHomePage() {
+  const { hostedEvents, joinedEvents } = await getEvents();
+
+  // event_participants(count) 집계값에서 참여자 수 추출
+  function getParticipantCount(event: (typeof hostedEvents)[number]): number {
+    const raw = event.event_participants;
+    if (Array.isArray(raw) && raw.length > 0) {
+      const first = raw[0] as { count: number };
+      return first.count ?? 0;
+    }
+    return 0;
+  }
 
   return (
     <div className="flex flex-col gap-6 p-4">
@@ -39,7 +37,7 @@ export default function ProtectedHomePage() {
               <EventCard
                 key={event.id}
                 event={event}
-                participantCount={getDummyApprovedCount(event.id)}
+                participantCount={getParticipantCount(event)}
                 variant="compact"
               />
             ))}
@@ -66,8 +64,7 @@ export default function ProtectedHomePage() {
               <EventCard
                 key={event.id}
                 event={event}
-                participantCount={getDummyApprovedCount(event.id)}
-                myStatus={getDummyMyStatus(event.id)}
+                participantCount={getParticipantCount(event)}
                 variant="compact"
               />
             ))}

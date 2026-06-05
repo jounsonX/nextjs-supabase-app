@@ -2,13 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { EventCard } from "@/components/events/event-card";
 import { cn } from "@/lib/utils";
-import {
-  getDummyHostedEvents,
-  getDummyJoinedEvents,
-  getDummyEvent,
-  getDummyApprovedCount,
-  getDummyMyStatus,
-} from "@/lib/dummy";
+import { getEvents } from "@/app/protected/events/actions";
 
 type Props = {
   searchParams: Promise<{ tab?: string }>;
@@ -18,11 +12,17 @@ export default async function EventsPage({ searchParams }: Props) {
   const { tab } = await searchParams;
   const activeTab = tab === "joined" ? "joined" : "hosting";
 
-  const hostedEvents = getDummyHostedEvents();
-  const joinedEventIds = getDummyJoinedEvents();
-  const joinedEvents = joinedEventIds
-    .map((id) => getDummyEvent(id))
-    .filter((e) => e !== null);
+  const { hostedEvents, joinedEvents } = await getEvents();
+
+  // event_participants(count) 집계값에서 참여자 수 추출
+  function getParticipantCount(event: (typeof hostedEvents)[number]): number {
+    const raw = event.event_participants;
+    if (Array.isArray(raw) && raw.length > 0) {
+      const first = raw[0] as { count: number };
+      return first.count ?? 0;
+    }
+    return 0;
+  }
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -73,7 +73,7 @@ export default async function EventsPage({ searchParams }: Props) {
               <EventCard
                 key={event.id}
                 event={event}
-                participantCount={getDummyApprovedCount(event.id)}
+                participantCount={getParticipantCount(event)}
               />
             ))
           )}
@@ -90,8 +90,7 @@ export default async function EventsPage({ searchParams }: Props) {
               <EventCard
                 key={event.id}
                 event={event}
-                participantCount={getDummyApprovedCount(event.id)}
-                myStatus={getDummyMyStatus(event.id)}
+                participantCount={getParticipantCount(event)}
               />
             ))
           )}
