@@ -23,11 +23,12 @@ export async function getEvents() {
 
   const userId = data.claims.sub;
 
-  // 내가 호스팅하는 모임
+  // 내가 호스팅하는 모임 (approved 참여자 수만 집계)
   const { data: hostedEvents, error: hostedError } = await supabase
     .from("events")
     .select("*, event_participants(count)")
     .eq("host_id", userId)
+    .eq("event_participants.status", "approved")
     .order("created_at", { ascending: false });
 
   if (hostedError) {
@@ -47,7 +48,7 @@ export async function getEvents() {
 
   const participantEventIds = (participantRows ?? []).map((r) => r.event_id);
 
-  // 내가 참여 중인 모임 (호스팅 제외)
+  // 내가 참여 중인 모임 (호스팅 제외, approved 참여자 수만 집계)
   let joinedEvents: typeof hostedEvents = [];
   if (participantEventIds.length > 0) {
     const { data: joined, error: joinedError } = await supabase
@@ -55,6 +56,7 @@ export async function getEvents() {
       .select("*, event_participants(count)")
       .in("id", participantEventIds)
       .neq("host_id", userId)
+      .eq("event_participants.status", "approved")
       .order("created_at", { ascending: false });
 
     if (joinedError) {
