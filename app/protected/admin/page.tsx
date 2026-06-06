@@ -1,8 +1,8 @@
 import { StatsCard } from "@/components/admin/stats-card";
-import { getDummyAdminStats } from "@/lib/dummy";
+import { getAdminStats } from "@/app/protected/admin/actions";
 
-export default function AdminDashboardPage() {
-  const stats = getDummyAdminStats();
+export default async function AdminDashboardPage() {
+  const stats = await getAdminStats();
 
   return (
     <div className="flex flex-col gap-6">

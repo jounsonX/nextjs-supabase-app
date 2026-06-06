@@ -1,5 +1,6 @@
 "use client";
 
+import { useTransition } from "react";
 import {
   Table,
   TableBody,
@@ -9,7 +10,22 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { StatusBadge } from "@/components/events/status-badge";
+import {
+  forceCloseEvent,
+  forceCancelEvent,
+} from "@/app/protected/admin/actions";
 import type { Event } from "@/types/database.types";
 
 interface EventWithCount extends Event {
@@ -27,6 +43,90 @@ function formatDate(dateStr: string | null): string {
     month: "short",
     day: "numeric",
   });
+}
+
+function EventActionButtons({ event }: { event: EventWithCount }) {
+  const [isPending, startTransition] = useTransition();
+
+  const handleClose = () => {
+    startTransition(async () => {
+      await forceCloseEvent(event.id);
+    });
+  };
+
+  const handleCancel = () => {
+    startTransition(async () => {
+      await forceCancelEvent(event.id);
+    });
+  };
+
+  return (
+    <div className="flex gap-1">
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            disabled={
+              isPending ||
+              event.status === "closed" ||
+              event.status === "cancelled"
+            }
+          >
+            마감
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>모임을 마감하시겠습니까?</AlertDialogTitle>
+            <AlertDialogDescription>
+              &ldquo;{event.title}&rdquo; 모임을 강제 마감합니다. 이 작업은
+              되돌리기 어렵습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={handleClose} disabled={isPending}>
+              마감 확인
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-destructive hover:text-destructive h-7 px-2 text-xs"
+            disabled={isPending || event.status === "cancelled"}
+          >
+            취소
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>모임을 취소하시겠습니까?</AlertDialogTitle>
+            <AlertDialogDescription>
+              &ldquo;{event.title}&rdquo; 모임을 강제 취소합니다. 이 작업은
+              되돌리기 어렵습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>닫기</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancel}
+              disabled={isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              취소 확인
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
 }
 
 export function EventTable({ events }: EventTableProps) {
@@ -58,24 +158,7 @@ export function EventTable({ events }: EventTableProps) {
               {event.max_capacity ? `/${event.max_capacity}` : ""}명
             </TableCell>
             <TableCell>
-              <div className="flex gap-1">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 px-2 text-xs"
-                  disabled={event.status === "closed"}
-                >
-                  마감
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-destructive hover:text-destructive h-7 px-2 text-xs"
-                  disabled={event.status === "cancelled"}
-                >
-                  취소
-                </Button>
-              </div>
+              <EventActionButtons event={event} />
             </TableCell>
           </TableRow>
         ))}

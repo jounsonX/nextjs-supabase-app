@@ -1,5 +1,6 @@
 "use client";
 
+import { useTransition } from "react";
 import {
   Table,
   TableBody,
@@ -17,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { ChevronDown } from "lucide-react";
+import { updateUserRole } from "@/app/protected/admin/actions";
 import type { Profile, UserRole } from "@/types/database.types";
 
 interface UserTableProps {
@@ -44,6 +46,52 @@ function formatDate(dateStr: string): string {
     month: "short",
     day: "numeric",
   });
+}
+
+function UserRoleDropdown({ user }: { user: Profile }) {
+  const [isPending, startTransition] = useTransition();
+
+  const handleRoleChange = (role: UserRole) => {
+    startTransition(async () => {
+      await updateUserRole(user.id, role);
+    });
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2"
+          disabled={isPending}
+        >
+          {isPending ? "변경 중..." : "역할 변경"}
+          <ChevronDown size={12} className="ml-1" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem
+          onClick={() => handleRoleChange("admin")}
+          disabled={user.role === "admin"}
+        >
+          관리자로 변경
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => handleRoleChange("host")}
+          disabled={user.role === "host"}
+        >
+          호스트로 변경
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => handleRoleChange("member")}
+          disabled={user.role === "member"}
+        >
+          일반으로 변경
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
 export function UserTable({ users }: UserTableProps) {
@@ -76,19 +124,7 @@ export function UserTable({ users }: UserTableProps) {
               {formatDate(user.created_at)}
             </TableCell>
             <TableCell>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-7 px-2">
-                    역할 변경
-                    <ChevronDown size={12} className="ml-1" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem>관리자로 변경</DropdownMenuItem>
-                  <DropdownMenuItem>호스트로 변경</DropdownMenuItem>
-                  <DropdownMenuItem>일반으로 변경</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <UserRoleDropdown user={user} />
             </TableCell>
           </TableRow>
         ))}

@@ -4,18 +4,27 @@ import { ThemeSwitcher } from "@/components/theme-switcher";
 import { LogoutButton } from "@/components/logout-button";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { Button } from "@/components/ui/button";
-import { DUMMY_USERS, CURRENT_USER_ID } from "@/lib/dummy";
+import { createClient } from "@/lib/supabase/server";
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // 현재 사용자의 역할 확인 (더미 데이터 기반)
-  const currentUser = DUMMY_USERS.find((u) => u.id === CURRENT_USER_ID);
-  const isAdmin = currentUser?.role === "admin";
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  const userId = data?.claims?.sub ?? null;
 
-  // 관리자가 아닌 경우 접근 거부 UI 표시
+  let isAdmin = false;
+  if (userId) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .single();
+    isAdmin = profile?.role === "admin";
+  }
+
   if (!isAdmin) {
     return (
       <div className="bg-background fixed inset-0 z-[100] flex items-center justify-center">
