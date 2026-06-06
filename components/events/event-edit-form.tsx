@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import {
   updateEvent,
@@ -23,6 +23,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -33,10 +44,15 @@ interface EventEditFormProps {
 const initialState: EventFormState = { success: false, message: "" };
 
 /** 저장 버튼 — useFormStatus는 form 내부에서만 동작 */
-function SaveButton() {
+function SaveButton({ onClick }: { onClick: (e: React.MouseEvent) => void }) {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" disabled={pending} className="flex-1">
+    <Button
+      type="button"
+      disabled={pending}
+      className="flex-1"
+      onClick={onClick}
+    >
       {pending ? "저장 중..." : "변경 저장"}
     </Button>
   );
@@ -50,6 +66,10 @@ export function EventEditForm({ event }: EventEditFormProps) {
   // Select는 FormData에 name을 전달하지 않으므로 hidden input으로 관리
   const [status, setStatus] = useState<EventStatus>(event.status);
 
+  // 저장 확인 다이얼로그 상태
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
   // datetime-local 형식으로 변환 (YYYY-MM-DDTHH:mm)
   const localDatetime = event.event_date
     ? new Date(event.event_date).toISOString().slice(0, 16)
@@ -61,7 +81,7 @@ export function EventEditForm({ event }: EventEditFormProps) {
         <CardTitle className="text-base">모임 정보 수정</CardTitle>
       </CardHeader>
       <CardContent>
-        <form action={formAction} className="flex flex-col gap-4">
+        <form ref={formRef} action={formAction} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="title">모임 제목 *</Label>
             <Input
@@ -158,7 +178,30 @@ export function EventEditForm({ event }: EventEditFormProps) {
           )}
 
           <div className="mt-2 flex gap-2">
-            <SaveButton />
+            {/* 변경 저장 확인 다이얼로그 */}
+            <AlertDialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+              <SaveButton onClick={() => setSaveDialogOpen(true)} />
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>변경 사항을 저장할까요?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    수정한 모임 정보가 저장됩니다. 계속하시겠습니까?
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>취소</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      setSaveDialogOpen(false);
+                      formRef.current?.requestSubmit();
+                    }}
+                  >
+                    저장
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
             <Button asChild variant="outline" className="flex-1">
               <Link href={`/protected/events/${event.id}`}>취소</Link>
             </Button>
@@ -166,14 +209,35 @@ export function EventEditForm({ event }: EventEditFormProps) {
         </form>
 
         {/* 모임 삭제 — 별도 form으로 분리하여 제출 충돌 방지 */}
-        <form
-          action={deleteEvent.bind(null, event.id)}
-          className="mt-4 border-t pt-4"
-        >
-          <Button type="submit" variant="destructive" className="w-full">
-            모임 삭제
-          </Button>
-        </form>
+        <div className="mt-4 border-t pt-4">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" className="w-full">
+                모임 삭제
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>모임을 삭제할까요?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  삭제된 모임은 복구할 수 없습니다. 공지, 참여자 정보 등 관련
+                  데이터가 모두 삭제됩니다.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>취소</AlertDialogCancel>
+                <form action={deleteEvent.bind(null, event.id)}>
+                  <AlertDialogAction
+                    type="submit"
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90 w-full"
+                  >
+                    삭제
+                  </AlertDialogAction>
+                </form>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </CardContent>
     </Card>
   );
