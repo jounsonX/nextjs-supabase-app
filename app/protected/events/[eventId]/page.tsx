@@ -184,6 +184,7 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
           <CarpoolTab
             eventId={eventId}
             isHost={isHost}
+            myStatus={myStatus}
             carpools={carpools}
             currentUserId={currentUserId}
           />
@@ -520,11 +521,13 @@ function SettlementTab({
 function CarpoolTab({
   eventId,
   isHost,
+  myStatus,
   carpools,
   currentUserId,
 }: {
   eventId: string;
   isHost: boolean;
+  myStatus: ParticipantStatus | null;
   carpools: Array<{
     id: string;
     driver_id: string;
@@ -538,7 +541,9 @@ function CarpoolTab({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
-        {isHost && <CarpoolRegisterButton eventId={eventId} />}
+        {(isHost || myStatus === "approved") && (
+          <CarpoolRegisterButton eventId={eventId} />
+        )}
       </div>
       {carpools.length === 0 ? (
         <p className="text-muted-foreground text-sm">등록된 카풀이 없습니다.</p>
