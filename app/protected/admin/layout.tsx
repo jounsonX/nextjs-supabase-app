@@ -51,7 +51,7 @@ export default function AdminLayout({
 
       {/* 오른쪽 콘텐츠 영역 */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <header className="bg-background sticky top-0 z-40 flex h-14 items-center justify-end border-b px-6">
+        <header className="bg-background sticky top-0 z-[110] flex h-14 items-center justify-end border-b px-6">
           <div className="flex items-center gap-2">
             <ThemeSwitcher />
             <LogoutButton />
