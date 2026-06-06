@@ -11,11 +11,14 @@ import { CarpoolRegisterButton } from "@/components/events/carpool-register-butt
 import { AnnouncementActions } from "@/components/events/announcement-actions";
 import { JoinButton } from "@/components/events/join-button";
 import { ParticipantManageRow } from "@/components/events/participant-manage-row";
+import { SettlementPaymentButton } from "@/components/events/settlement-payment-button";
+import { CarpoolRequestButton } from "@/components/events/carpool-request-button";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
 import {
   getEvent,
   getAnnouncements,
+  getCarpools,
 } from "@/app/protected/events/[eventId]/actions";
 import type {
   EventAnnouncement,
@@ -23,7 +26,6 @@ import type {
   Profile,
   ParticipantStatus,
 } from "@/types/database.types";
-import { getDummyCarpools, getDummySettlement } from "@/lib/dummy";
 
 type Props = {
   params: Promise<{ eventId: string }>;
@@ -97,8 +99,11 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
     profileMap = Object.fromEntries((profiles ?? []).map((p) => [p.id, p]));
   }
 
-  // ── 공지 데이터 (실제 DB, 탭이 announcements일 때만 또는 항상 조회) ──────────
+  // ── 공지 데이터 (실제 DB) ────────────────────────────────────────────────────
   const announcements: EventAnnouncement[] = await getAnnouncements(eventId);
+
+  // ── 카풀 데이터 (실제 DB) ────────────────────────────────────────────────────
+  const carpools = await getCarpools(eventId);
 
   return (
     <div className="flex flex-col">
@@ -170,12 +175,18 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
           <SettlementTab
             eventId={eventId}
             isHost={isHost}
+            eventCost={event.cost}
             approvedParticipants={approvedParticipants}
             profileMap={profileMap}
           />
         )}
         {activeTab === "carpool" && (
-          <CarpoolTab eventId={eventId} isHost={isHost} />
+          <CarpoolTab
+            eventId={eventId}
+            isHost={isHost}
+            carpools={carpools}
+            currentUserId={currentUserId}
+          />
         )}
       </div>
     </div>
@@ -428,23 +439,21 @@ function AnnouncementsTab({
 // ─── 정산 탭 ────────────────────────────────────────────────────────────────
 
 function SettlementTab({
-  eventId,
   isHost,
+  eventCost,
   approvedParticipants,
   profileMap,
 }: {
   eventId: string;
   isHost: boolean;
+  eventCost: number;
   approvedParticipants: EventParticipant[];
   profileMap: Record<string, Profile>;
 }) {
-  // 정산 데이터는 Task 010에서 실제 DB 연동 예정 — 더미 유지
-  const settlement = getDummySettlement(eventId);
-  // 승인된 참여자 수/납부 현황은 실제 데이터 사용
   const approvedCount = approvedParticipants.length;
   const paidCount = approvedParticipants.filter((p) => p.payment_done).length;
   const perPerson =
-    approvedCount > 0 ? Math.ceil(settlement.total_cost / approvedCount) : 0;
+    approvedCount > 0 ? Math.ceil(eventCost / approvedCount) : 0;
 
   return (
     <div className="flex flex-col gap-4">
@@ -454,7 +463,7 @@ function SettlementTab({
           <div>
             <p className="text-muted-foreground text-xs">총 비용</p>
             <p className="mt-0.5 font-semibold">
-              {settlement.total_cost.toLocaleString("ko-KR")}원
+              {eventCost.toLocaleString("ko-KR")}원
             </p>
           </div>
           <div>
@@ -492,14 +501,10 @@ function SettlementTab({
                   showPayment
                 />
                 {isHost && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 text-xs"
-                    disabled
-                  >
-                    {p.payment_done ? "납부 취소" : "납부 확인"}
-                  </Button>
+                  <SettlementPaymentButton
+                    participantId={p.id}
+                    paymentDone={p.payment_done}
+                  />
                 )}
               </div>
             );
@@ -512,10 +517,24 @@ function SettlementTab({
 
 // ─── 카풀 탭 ────────────────────────────────────────────────────────────────
 
-function CarpoolTab({ eventId, isHost }: { eventId: string; isHost: boolean }) {
-  // 카풀 데이터는 Task 010에서 실제 DB 연동 예정 — 더미 유지
-  const carpools = getDummyCarpools(eventId);
-
+function CarpoolTab({
+  eventId,
+  isHost,
+  carpools,
+  currentUserId,
+}: {
+  eventId: string;
+  isHost: boolean;
+  carpools: Array<{
+    id: string;
+    driver_id: string;
+    departure: string;
+    capacity: number;
+    note: string | null;
+    remaining_seats: number;
+  }>;
+  currentUserId: string | null;
+}) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
@@ -552,14 +571,13 @@ function CarpoolTab({ eventId, isHost }: { eventId: string; isHost: boolean }) {
                       {carpool.note}
                     </p>
                   )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="mt-1 w-full"
-                    disabled={carpool.remaining_seats === 0}
-                  >
-                    {carpool.remaining_seats === 0 ? "자리 없음" : "동승 신청"}
-                  </Button>
+                  {/* 드라이버 본인 또는 호스트가 드라이버인 경우 신청 버튼 숨김 */}
+                  {currentUserId !== carpool.driver_id && (
+                    <CarpoolRequestButton
+                      carpoolId={carpool.id}
+                      remainingSeats={carpool.remaining_seats}
+                    />
+                  )}
                 </div>
               </CardContent>
             </Card>

@@ -523,6 +523,32 @@ async function promoteFirstWaitlisted(
     .eq("id", firstWaiting.id);
 }
 
+// ─── 참여자 조회 ──────────────────────────────────────────────────────────────
+
+/**
+ * 모임의 참여자 목록 조회 (profiles join 포함)
+ */
+export async function getParticipants(eventId: string) {
+  const supabase = await createClient();
+  const { data, error: claimsError } = await supabase.auth.getClaims();
+
+  if (claimsError || !data?.claims) {
+    redirect("/auth/login");
+  }
+
+  const { data: participants, error } = await supabase
+    .from("event_participants")
+    .select("*, profiles(id, username, full_name, avatar_url)")
+    .eq("event_id", eventId)
+    .order("joined_at", { ascending: true });
+
+  if (error) {
+    throw new Error(`참여자 조회 실패: ${error.message}`);
+  }
+
+  return participants ?? [];
+}
+
 // ─── 공지 관리 (F005 · F006) ──────────────────────────────────────────────────
 
 /**
@@ -743,20 +769,278 @@ export async function togglePin(
   };
 }
 
-// ─── Task 010 스켈레톤: 정산 및 카풀 관리 ────────────────────────────────────
+// ─── 정산 관리 (F009) ────────────────────────────────────────────────────────
 
-export async function togglePayment(_participantId: string): Promise<void> {}
+/**
+ * 참여자 납부 상태 토글 Server Action (F009)
+ * - 호스트만 가능
+ */
+export async function togglePayment(
+  participantId: string
+): Promise<{ success: boolean; message: string }> {
+  const supabase = await createClient();
+  const { data, error: claimsError } = await supabase.auth.getClaims();
 
-export async function createCarpool(
-  _prevState: CarpoolFormState,
-  _formData: FormData
-): Promise<CarpoolFormState> {
-  return { success: false, message: "미구현" };
+  if (claimsError || !data?.claims) {
+    redirect("/auth/login");
+  }
+
+  const userId = data.claims.sub;
+
+  // 참여자 정보 조회 (event_id 포함)
+  const { data: participant, error: fetchError } = await supabase
+    .from("event_participants")
+    .select("id, event_id, payment_done")
+    .eq("id", participantId)
+    .single();
+
+  if (fetchError || !participant) {
+    return { success: false, message: "참여자 정보를 찾을 수 없습니다." };
+  }
+
+  // 호스트 권한 검증
+  const { data: event, error: eventError } = await supabase
+    .from("events")
+    .select("host_id")
+    .eq("id", participant.event_id)
+    .single();
+
+  if (eventError || !event) {
+    return { success: false, message: "모임을 찾을 수 없습니다." };
+  }
+
+  if (event.host_id !== userId) {
+    return { success: false, message: "납부 상태를 변경할 권한이 없습니다." };
+  }
+
+  const newPaymentState = !participant.payment_done;
+
+  const { error: updateError } = await supabase
+    .from("event_participants")
+    .update({ payment_done: newPaymentState })
+    .eq("id", participantId);
+
+  if (updateError) {
+    return {
+      success: false,
+      message: `납부 상태 변경 실패: ${updateError.message}`,
+    };
+  }
+
+  revalidatePath(`/protected/events/${participant.event_id}`);
+  return {
+    success: true,
+    message: newPaymentState
+      ? "납부 완료로 표시되었습니다."
+      : "납부 취소되었습니다.",
+  };
 }
 
+// ─── 카풀 관리 (F010) ────────────────────────────────────────────────────────
+
+/**
+ * 모임의 카풀 목록 조회 (carpool_requests join 포함)
+ */
+export async function getCarpools(eventId: string) {
+  const supabase = await createClient();
+  const { data, error: claimsError } = await supabase.auth.getClaims();
+
+  if (claimsError || !data?.claims) {
+    redirect("/auth/login");
+  }
+
+  const { data: carpools, error } = await supabase
+    .from("carpools")
+    .select("*, carpool_requests(id, status, passenger_id)")
+    .eq("event_id", eventId)
+    .order("id", { ascending: true });
+
+  if (error) {
+    throw new Error(`카풀 조회 실패: ${error.message}`);
+  }
+
+  // 잔여 좌석 계산
+  return (carpools ?? []).map((carpool) => {
+    const requests = carpool.carpool_requests ?? [];
+    const acceptedCount = requests.filter(
+      (r: { status: string }) => r.status === "accepted"
+    ).length;
+    return {
+      ...carpool,
+      remaining_seats: carpool.capacity - acceptedCount,
+    };
+  });
+}
+
+/**
+ * 카풀 등록 Server Action (F010)
+ * - 호스트 또는 승인된 참여자만 가능
+ */
+export async function createCarpool(
+  _prevState: CarpoolFormState,
+  formData: FormData
+): Promise<CarpoolFormState> {
+  const supabase = await createClient();
+  const { data, error: claimsError } = await supabase.auth.getClaims();
+
+  if (claimsError || !data?.claims) {
+    redirect("/auth/login");
+  }
+
+  const userId = data.claims.sub;
+  const eventId = formData.get("event_id") as string | null;
+
+  if (!eventId) {
+    return { success: false, message: "모임 정보가 없습니다." };
+  }
+
+  // 필수 필드 검증
+  const departure = (formData.get("departure") as string | null)?.trim();
+  if (!departure) {
+    return { success: false, message: "출발지는 필수입니다." };
+  }
+
+  const capacityRaw = formData.get("capacity") as string | null;
+  const capacity =
+    capacityRaw && capacityRaw.trim() !== "" ? parseInt(capacityRaw, 10) : 0;
+
+  if (!capacity || capacity < 1) {
+    return { success: false, message: "좌석 수는 1 이상이어야 합니다." };
+  }
+
+  const note = (formData.get("note") as string | null)?.trim() || null;
+
+  // 권한 검증: 호스트 또는 승인된 참여자
+  const { data: event, error: eventError } = await supabase
+    .from("events")
+    .select("host_id")
+    .eq("id", eventId)
+    .single();
+
+  if (eventError || !event) {
+    return { success: false, message: "모임을 찾을 수 없습니다." };
+  }
+
+  const isHost = event.host_id === userId;
+
+  if (!isHost) {
+    // 승인된 참여자 여부 확인
+    const { data: participant } = await supabase
+      .from("event_participants")
+      .select("id")
+      .eq("event_id", eventId)
+      .eq("user_id", userId)
+      .eq("status", "approved")
+      .maybeSingle();
+
+    if (!participant) {
+      return { success: false, message: "카풀을 등록할 권한이 없습니다." };
+    }
+  }
+
+  const { error: insertError } = await supabase.from("carpools").insert({
+    event_id: eventId,
+    driver_id: userId,
+    departure,
+    capacity,
+    note,
+  });
+
+  if (insertError) {
+    return {
+      success: false,
+      message: `카풀 등록 실패: ${insertError.message}`,
+    };
+  }
+
+  revalidatePath(`/protected/events/${eventId}`);
+  redirect(`/protected/events/${eventId}?tab=carpool`);
+}
+
+/**
+ * 카풀 동승 신청 Server Action (F010)
+ * - 선착순 즉시 accepted 처리
+ * - 좌석 초과 시 거절
+ * - 드라이버 본인 신청 불가
+ */
 export async function requestCarpool(
   _prevState: CarpoolRequestFormState,
-  _formData: FormData
+  formData: FormData
 ): Promise<CarpoolRequestFormState> {
-  return { success: false, message: "미구현" };
+  const supabase = await createClient();
+  const { data, error: claimsError } = await supabase.auth.getClaims();
+
+  if (claimsError || !data?.claims) {
+    redirect("/auth/login");
+  }
+
+  const userId = data.claims.sub;
+  const carpoolId = formData.get("carpool_id") as string | null;
+
+  if (!carpoolId) {
+    return { success: false, message: "카풀 정보가 없습니다." };
+  }
+
+  // 카풀 정보 조회
+  const { data: carpool, error: carpoolError } = await supabase
+    .from("carpools")
+    .select("id, event_id, driver_id, capacity")
+    .eq("id", carpoolId)
+    .single();
+
+  if (carpoolError || !carpool) {
+    return { success: false, message: "카풀 정보를 찾을 수 없습니다." };
+  }
+
+  // 드라이버 본인 신청 방지
+  if (carpool.driver_id === userId) {
+    return {
+      success: false,
+      message: "본인이 등록한 카풀에는 신청할 수 없습니다.",
+    };
+  }
+
+  // 현재 accepted 건수 집계 → 잔여 좌석 확인
+  const { count: acceptedCount } = await supabase
+    .from("carpool_requests")
+    .select("*", { count: "exact", head: true })
+    .eq("carpool_id", carpoolId)
+    .eq("status", "accepted");
+
+  const remaining = carpool.capacity - (acceptedCount ?? 0);
+
+  if (remaining <= 0) {
+    return { success: false, message: "자리가 없습니다." };
+  }
+
+  // 중복 신청 확인 (pending/accepted 상태)
+  const { data: existing } = await supabase
+    .from("carpool_requests")
+    .select("id")
+    .eq("carpool_id", carpoolId)
+    .eq("passenger_id", userId)
+    .in("status", ["pending", "accepted"])
+    .maybeSingle();
+
+  if (existing) {
+    return { success: false, message: "이미 동승 신청한 카풀입니다." };
+  }
+
+  const { error: insertError } = await supabase
+    .from("carpool_requests")
+    .insert({
+      carpool_id: carpoolId,
+      passenger_id: userId,
+      status: "accepted",
+    });
+
+  if (insertError) {
+    return {
+      success: false,
+      message: `동승 신청 실패: ${insertError.message}`,
+    };
+  }
+
+  revalidatePath(`/protected/events/${carpool.event_id}`);
+  return { success: true, message: "동승 신청이 완료되었습니다." };
 }
