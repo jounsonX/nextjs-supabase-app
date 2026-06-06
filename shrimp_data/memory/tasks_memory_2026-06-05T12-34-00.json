@@ -1,0 +1,360 @@
+{
+  "tasks": [
+    {
+      "id": "c6cedd6b-5647-406f-9c7f-18b3f5141afe",
+      "name": "Task 002: 타입 정의 및 데이터 모델 설계",
+      "description": "types/database.types.ts에 5개 신규 엔티티 타입과 폼 상태 타입, 파생 타입을 추가한다. DB 스키마 SQL과 RLS 정책을 tasks/002-types.md에 문서화한다.",
+      "notes": "tasks/002-types.md의 SQL은 Phase 3 Task 006에서 mcp__supabase__apply_migration으로 적용 예정. 이 단계에서는 TypeScript 타입 정의와 문서화만 수행.",
+      "status": "completed",
+      "dependencies": [],
+      "createdAt": "2026-06-03T12:15:33.272Z",
+      "updatedAt": "2026-06-04T10:16:19.492Z",
+      "relatedFiles": [
+        {
+          "path": "types/database.types.ts",
+          "type": "TO_MODIFY",
+          "description": "신규 엔티티 타입 추가",
+          "lineStart": 1,
+          "lineEnd": 20
+        },
+        {
+          "path": "tasks/002-types.md",
+          "type": "CREATE",
+          "description": "DB 스키마 SQL 및 RLS 정책 문서"
+        }
+      ],
+      "implementationGuide": "1. types/database.types.ts에 기존 Profile 블록 아래에 추가:\n   - EventStatus = 'draft' | 'open' | 'closed' | 'cancelled'\n   - ParticipantStatus = 'pending' | 'approved' | 'rejected' | 'waitlisted' | 'cancelled'\n   - CarpoolRequestStatus = 'pending' | 'accepted' | 'rejected'\n   - Event 타입: id, host_id, title, description?, location?, event_date?, max_capacity?, cost(default 0), status, created_at, updated_at\n   - EventInsert, EventUpdate\n   - EventParticipant: id, event_id, user_id, status, payment_done(boolean), joined_at\n   - EventParticipantInsert, EventParticipantUpdate\n   - EventAnnouncement: id, event_id, author_id, title, content, is_pinned(boolean), created_at, updated_at\n   - EventAnnouncementInsert, EventAnnouncementUpdate\n   - Carpool: id, event_id, driver_id, departure, capacity, note?\n   - CarpoolInsert, CarpoolUpdate\n   - CarpoolRequest: id, carpool_id, passenger_id, status\n   - CarpoolRequestInsert, CarpoolRequestUpdate\n   - EventFormState: { success: boolean; message: string; eventId?: string }\n   - ParticipationFormState, AnnouncementFormState, CarpoolFormState, CarpoolRequestFormState: { success: boolean; message: string }\n   - SettlementSummary: { total_cost, approved_count, per_person, paid_count, unpaid_count }\n   - CarpoolWithRequests: Carpool & { requests: CarpoolRequest[]; remaining_seats: number }\n2. tasks/002-types.md 생성: 5개 테이블 SQL 스키마 + RLS 정책 문서화",
+      "verificationCriteria": "npm run type-check 통과. npm run lint 통과. 모든 상태 리터럴 타입이 ROADMAP.md 명세와 일치. EventFormState에 eventId? 포함. SettlementSummary의 per_person 필드 존재.",
+      "analysisResult": "Next.js 15 App Router + Supabase 모임 관리 플랫폼 Phase 1 구축. 데이터 연동 없이 라우트 구조, 페이지 골격, 타입 정의를 완성하는 단계. 탭 구현은 searchParams 기반 서버 컴포넌트 방식 사용. Next.js 15에서 params/searchParams는 반드시 Promise await 처리 필요. 기존 패턴(getClaims → redirect, cn(), shadcn/ui 컴포넌트)을 그대로 재사용.",
+      "summary": "types/database.types.ts에 UserRole, EventStatus, ParticipantStatus, CarpoolRequestStatus 등 모든 상태 리터럴 타입과 Event/EventParticipant/EventAnnouncement/Carpool/CarpoolRequest 엔티티 타입, Insert/Update 파생 타입, 5개 FormState 타입, SettlementSummary(per_person 포함)/CarpoolWithRequests/AdminStats 집계 타입을 추가 완료. tasks/002-types.md에 6개 테이블 SQL DDL과 RLS 정책 설계 문서화 완료. type-check 오류는 아직 미생성된 라우트 파일 참조로 인한 것으로 Task 002 자체 타입과 무관함.",
+      "completedAt": "2026-06-04T10:16:19.478Z"
+    },
+    {
+      "id": "38d0fee1-be93-455b-863d-25a87992922b",
+      "name": "Task 001-A: 레이아웃 및 대시보드 골격",
+      "description": "app/protected/layout.tsx에 이벤트 관련 네비게이션 링크를 추가하고, app/protected/page.tsx를 내 모임 대시보드 골격으로 교체한다.",
+      "notes": "기존 tutorial/ 컴포넌트 임포트를 완전히 제거. Button 컴포넌트는 asChild 패턴으로 Link와 조합 가능.",
+      "status": "completed",
+      "dependencies": [
+        {
+          "taskId": "c6cedd6b-5647-406f-9c7f-18b3f5141afe"
+        }
+      ],
+      "createdAt": "2026-06-03T12:15:33.272Z",
+      "updatedAt": "2026-06-04T10:19:19.422Z",
+      "relatedFiles": [
+        {
+          "path": "app/protected/layout.tsx",
+          "type": "TO_MODIFY",
+          "description": "네비게이션 링크 추가",
+          "lineStart": 1,
+          "lineEnd": 62
+        },
+        {
+          "path": "app/protected/page.tsx",
+          "type": "TO_MODIFY",
+          "description": "대시보드 골격으로 교체",
+          "lineStart": 1,
+          "lineEnd": 43
+        },
+        {
+          "path": "components/ui/card.tsx",
+          "type": "DEPENDENCY",
+          "description": "Card 컴포넌트 재사용"
+        },
+        {
+          "path": "components/ui/button.tsx",
+          "type": "DEPENDENCY",
+          "description": "Button 컴포넌트 재사용"
+        }
+      ],
+      "implementationGuide": "1. app/protected/layout.tsx 수정:\n   - 기존 '프로필' 링크 앞에 '모임 목록'(href='/protected/events')과 '새 모임'(href='/protected/events/new') 링크 추가\n   - 기존 컴포넌트(DeployButton, EnvVarWarning, AuthButton, ThemeSwitcher) 유지\n2. app/protected/page.tsx 전체 교체:\n   - UserDetails, FetchDataSteps, InfoIcon, tutorial import 제거\n   - Card, CardHeader, CardTitle, CardContent, Button import 추가\n   - 섹션 1: '내가 주최한 모임' h2 + '새 모임 만들기' Button(Link) + 빈 상태 메시지\n   - 섹션 2: '내가 참여한 모임' h2 + '모임 목록 보기' Link + 빈 상태 메시지\n   - 인증 가드: getClaims() 체크 없이 서버 컴포넌트로 유지 (layout이 보호하므로)",
+      "verificationCriteria": "브라우저에서 /protected 접근 시 대시보드 골격 표시. 네비게이션에 '모임 목록', '새 모임' 링크 존재. npm run type-check 통과.",
+      "analysisResult": "Next.js 15 App Router + Supabase 모임 관리 플랫폼 Phase 1 구축. 데이터 연동 없이 라우트 구조, 페이지 골격, 타입 정의를 완성하는 단계. 탭 구현은 searchParams 기반 서버 컴포넌트 방식 사용. Next.js 15에서 params/searchParams는 반드시 Promise await 처리 필요. 기존 패턴(getClaims → redirect, cn(), shadcn/ui 컴포넌트)을 그대로 재사용.",
+      "summary": "middleware.ts 생성(인증 가드 활성화), app/protected/layout.tsx 전면 교체(헤더+BottomNav+FAB), BottomNav/CreateEventFab 클라이언트 컴포넌트 신규 생성, app/protected/page.tsx 대시보드 골격으로 교체(FetchDataSteps 완전 제거), components/tutorial/ 폴더 삭제, app/page.tsx 루트 리다이렉트로 교체. type-check/lint 모두 통과.",
+      "completedAt": "2026-06-04T10:19:19.406Z"
+    },
+    {
+      "id": "2d4d4e4d-c9ec-4124-99dc-6675f2049e9e",
+      "name": "Task 001-B: 이벤트 목록 및 생성 페이지 골격",
+      "description": "app/protected/events/page.tsx(목록)와 app/protected/events/new/page.tsx(생성 폼 골격)를 생성한다.",
+      "notes": "events/new/page.tsx는 Phase 1 골격이므로 form action 연결 없음. textarea는 profile-form.tsx의 수동 Tailwind 클래스 패턴 재사용.",
+      "status": "completed",
+      "dependencies": [
+        {
+          "taskId": "38d0fee1-be93-455b-863d-25a87992922b"
+        }
+      ],
+      "createdAt": "2026-06-03T12:15:33.272Z",
+      "updatedAt": "2026-06-04T10:20:12.505Z",
+      "relatedFiles": [
+        {
+          "path": "app/protected/events/page.tsx",
+          "type": "CREATE",
+          "description": "모임 목록 페이지 (searchParams 탭)"
+        },
+        {
+          "path": "app/protected/events/new/page.tsx",
+          "type": "CREATE",
+          "description": "모임 생성 폼 골격"
+        },
+        {
+          "path": "components/profile-form.tsx",
+          "type": "REFERENCE",
+          "description": "textarea 스타일 패턴 참조",
+          "lineStart": 87,
+          "lineEnd": 94
+        },
+        {
+          "path": "components/ui/input.tsx",
+          "type": "DEPENDENCY",
+          "description": "Input 컴포넌트"
+        },
+        {
+          "path": "lib/utils.ts",
+          "type": "DEPENDENCY",
+          "description": "cn() 유틸리티"
+        }
+      ],
+      "implementationGuide": "1. app/protected/events/page.tsx 생성:\n   - type Props = { searchParams: Promise<{ tab?: string }> }\n   - export default async function EventsPage({ searchParams }: Props)\n   - const { tab } = await searchParams\n   - activeTab = tab === 'joined' ? 'joined' : 'hosting'\n   - 탭 버튼 2개: <Link href='?tab=hosting'>, <Link href='?tab=joined'>\n   - 활성 탭 스타일: cn('border-b-2', activeTab === 'hosting' ? 'border-foreground' : 'border-transparent text-muted-foreground')\n   - hosting 탭: '새 모임 만들기' Button(Link) + 빈 상태 메시지\n   - joined 탭: 빈 상태 메시지\n2. app/protected/events/new/page.tsx 생성:\n   - 서버 컴포넌트 (use client 불필요)\n   - 뒤로가기 Link: ← 모임 목록\n   - Card 래핑 정적 폼 (action 연결 없음)\n   - 필드: 제목(Input), 날짜/시간(datetime-local), 장소(Input), 정원(number), 비용(number), 설명(native textarea), 상태(native select: open/closed)\n   - 제출 버튼: '모임 만들기'",
+      "verificationCriteria": "/protected/events 접근 시 탭 전환 작동, URL ?tab=joined 변경 확인. /protected/events/new 접근 시 폼 필드 표시. npm run type-check 통과.",
+      "analysisResult": "Next.js 15 App Router + Supabase 모임 관리 플랫폼 Phase 1 구축. 데이터 연동 없이 라우트 구조, 페이지 골격, 타입 정의를 완성하는 단계. 탭 구현은 searchParams 기반 서버 컴포넌트 방식 사용. Next.js 15에서 params/searchParams는 반드시 Promise await 처리 필요. 기존 패턴(getClaims → redirect, cn(), shadcn/ui 컴포넌트)을 그대로 재사용.",
+      "summary": "events/page.tsx에 searchParams 기반 hosting/joined 탭 전환 구현(URL ?tab=joined), events/new/page.tsx에 제목/날짜/장소/정원/비용/설명/상태 필드 포함한 정적 폼 골격 구현. type-check/lint 통과.",
+      "completedAt": "2026-06-04T10:20:12.471Z"
+    },
+    {
+      "id": "1ffe8f66-29d1-4e6a-a897-d4166e89cad9",
+      "name": "Task 001-C: 이벤트 상세 페이지 탭 골격",
+      "description": "app/protected/events/[eventId]/page.tsx를 생성한다. searchParams 기반 4탭(정보/공지/정산/카풀) 구조를 구현한다.",
+      "notes": "Badge 컴포넌트는 components/ui/badge.tsx 재사용. activeTab switch는 if/else 또는 객체 맵 방식 모두 가능.",
+      "status": "completed",
+      "dependencies": [
+        {
+          "taskId": "2d4d4e4d-c9ec-4124-99dc-6675f2049e9e"
+        }
+      ],
+      "createdAt": "2026-06-03T12:15:33.272Z",
+      "updatedAt": "2026-06-04T10:20:51.028Z",
+      "relatedFiles": [
+        {
+          "path": "app/protected/events/[eventId]/page.tsx",
+          "type": "CREATE",
+          "description": "모임 상세 4탭 골격"
+        },
+        {
+          "path": "components/ui/badge.tsx",
+          "type": "DEPENDENCY",
+          "description": "상태 배지"
+        },
+        {
+          "path": "lib/utils.ts",
+          "type": "DEPENDENCY",
+          "description": "cn() 유틸리티"
+        }
+      ],
+      "implementationGuide": "1. type Props = { params: Promise<{ eventId: string }>; searchParams: Promise<{ tab?: string }> }\n2. export default async function EventDetailPage({ params, searchParams }: Props)\n3. const { eventId } = await params\n4. const { tab } = await searchParams\n5. const activeTab = tab ?? 'info'\n6. 헤더 영역:\n   - 모임 제목 플레이스홀더 텍스트\n   - Badge 컴포넌트로 상태 표시 (예: 'open')\n   - 수정 버튼: <Link href={`/protected/events/${eventId}/edit`}>\n7. 탭 네비게이션 (배열 map으로 렌더링):\n   - tabs = [{ key: 'info', label: '정보' }, { key: 'announcements', label: '공지' }, { key: 'settlement', label: '정산' }, { key: 'carpool', label: '카풀' }]\n   - 각 탭: <Link href={`?tab=${t.key}`} className={cn(...)}>\n8. 탭 콘텐츠 (activeTab switch):\n   - info: 모임 정보 영역 플레이스홀더 + 참여 신청 버튼 플레이스홀더\n   - announcements: 공지 목록 영역 + 공지 작성 Link(href={`/protected/events/${eventId}/announcements/new`})\n   - settlement: 정산 현황 플레이스홀더 (총 비용 / 1인당 금액)\n   - carpool: 카풀 목록 플레이스홀더 + 카풀 등록 버튼 플레이스홀더",
+      "verificationCriteria": "/protected/events/test-id 접근 시 4개 탭 표시. 탭 클릭 시 URL ?tab=announcements 등으로 변경. 수정 링크 존재. npm run type-check 통과.",
+      "analysisResult": "Next.js 15 App Router + Supabase 모임 관리 플랫폼 Phase 1 구축. 데이터 연동 없이 라우트 구조, 페이지 골격, 타입 정의를 완성하는 단계. 탭 구현은 searchParams 기반 서버 컴포넌트 방식 사용. Next.js 15에서 params/searchParams는 반드시 Promise await 처리 필요. 기존 패턴(getClaims → redirect, cn(), shadcn/ui 컴포넌트)을 그대로 재사용.",
+      "summary": "events/[eventId]/page.tsx에 searchParams 기반 info/announcements/settlement/carpool 4탭 구조 구현. 헤더에 수정 버튼(edit 링크), Badge 상태 표시, 공지탭에 공지작성 링크, 정산탭에 금액 플레이스홀더, 카풀탭에 등록 버튼 플레이스홀더 포함. type-check 통과.",
+      "completedAt": "2026-06-04T10:20:51.000Z"
+    },
+    {
+      "id": "5b78c0ee-b180-4153-a2cd-632c7774f27a",
+      "name": "Task 001-D: 수정/공지작성 페이지 및 Server Actions 골격",
+      "description": "app/protected/events/[eventId]/edit/page.tsx, app/protected/events/[eventId]/announcements/new/page.tsx, app/protected/events/[eventId]/actions.ts를 생성한다.",
+      "notes": "actions.ts의 빈 함수에 타입 임포트를 추가하면 eslint-plugin-unused-imports가 pre-commit에서 제거할 수 있으므로 임포트 없이 유지. Checkbox는 components/ui/checkbox.tsx 재사용.",
+      "status": "completed",
+      "dependencies": [
+        {
+          "taskId": "1ffe8f66-29d1-4e6a-a897-d4166e89cad9"
+        }
+      ],
+      "createdAt": "2026-06-03T12:15:33.272Z",
+      "updatedAt": "2026-06-04T10:27:22.002Z",
+      "relatedFiles": [
+        {
+          "path": "app/protected/events/[eventId]/edit/page.tsx",
+          "type": "CREATE",
+          "description": "모임 수정 폼 골격"
+        },
+        {
+          "path": "app/protected/events/[eventId]/announcements/new/page.tsx",
+          "type": "CREATE",
+          "description": "공지 작성 폼 골격"
+        },
+        {
+          "path": "app/protected/events/[eventId]/actions.ts",
+          "type": "CREATE",
+          "description": "빈 Server Actions 파일"
+        },
+        {
+          "path": "components/ui/checkbox.tsx",
+          "type": "DEPENDENCY",
+          "description": "핀 고정 체크박스"
+        },
+        {
+          "path": "components/ui/label.tsx",
+          "type": "DEPENDENCY",
+          "description": "Label 컴포넌트"
+        }
+      ],
+      "implementationGuide": "1. edit/page.tsx:\n   - type Props = { params: Promise<{ eventId: string }> }\n   - const { eventId } = await params\n   - 모임 생성 폼과 동일한 필드 + status에 cancelled 추가\n   - 취소 버튼: <Link href={`/protected/events/${eventId}`}>\n   - 저장 버튼: '변경 저장'\n2. announcements/new/page.tsx:\n   - type Props = { params: Promise<{ eventId: string }> }\n   - const { eventId } = await params\n   - 뒤로가기: <Link href={`/protected/events/${eventId}?tab=announcements`}>\n   - 제목 Input\n   - 내용 native textarea\n   - 핀 고정: components/ui/checkbox.tsx + Label\n   - 저장/취소 버튼\n3. actions.ts:\n   - 'use server' 선언\n   - 빈 함수 시그니처 (타입 임포트 없이)\n   - createEvent, updateEvent, deleteEvent, getEvent (Task 006)\n   - createAnnouncement, deleteAnnouncement, togglePin (Task 007)\n   - joinEvent, cancelParticipation, approveParticipant, rejectParticipant (Task 007)\n   - togglePayment (Task 008)\n   - createCarpool, requestCarpool (Task 008)\n   - 각 함수에 주석으로 담당 Task 번호 표시",
+      "verificationCriteria": "/protected/events/test-id/edit 접근 시 수정 폼 표시. /protected/events/test-id/announcements/new 접근 시 공지 작성 폼과 체크박스 표시. npm run type-check 통과. npm run build 오류 없음.",
+      "analysisResult": "Next.js 15 App Router + Supabase 모임 관리 플랫폼 Phase 1 구축. 데이터 연동 없이 라우트 구조, 페이지 골격, 타입 정의를 완성하는 단계. 탭 구현은 searchParams 기반 서버 컴포넌트 방식 사용. Next.js 15에서 params/searchParams는 반드시 Promise await 처리 필요. 기존 패턴(getClaims → redirect, cn(), shadcn/ui 컴포넌트)을 그대로 재사용.",
+      "summary": "edit/page.tsx(수정 폼, cancelled 포함 상태 선택, 취소/저장 버튼), announcements/new/page.tsx(제목/내용/핀고정 Checkbox), [eventId]/actions.ts(Task 008~010 담당 주석 포함 빈 Server Actions) 생성 완료. Next.js 16 cacheComponents 모드에서 proxy.ts 방식으로 인증 가드 설정, protected/layout.tsx에 Suspense 추가로 PPR 빌드 통과. npm run build/type-check/lint 모두 통과.",
+      "completedAt": "2026-06-04T10:27:21.784Z"
+    },
+    {
+      "id": "78b3eb4e-3241-4349-9039-340c476f9f7a",
+      "name": "Task 005-A: tasks/005-auth-profile-ui.md 작업 파일 생성",
+      "description": "ROADMAP Task 005의 작업 명세 파일을 tasks/ 디렉토리에 생성한다. tasks/002-types.md 포맷을 참고하며, 이미 완성된 항목은 [x] 체크, 미완성 항목은 [ ]로 표시한다.",
+      "status": "completed",
+      "dependencies": [],
+      "createdAt": "2026-06-04T11:30:39.093Z",
+      "updatedAt": "2026-06-04T11:32:34.474Z",
+      "relatedFiles": [
+        {
+          "path": "tasks/005-auth-profile-ui.md",
+          "type": "CREATE",
+          "description": "Task 005 작업 명세 파일"
+        },
+        {
+          "path": "tasks/002-types.md",
+          "type": "REFERENCE",
+          "description": "작업 파일 포맷 참고"
+        }
+      ],
+      "implementationGuide": "tasks/005-auth-profile-ui.md 신규 생성:\n- 개요: Task 005 범위 설명\n- 완료 기준 체크리스트:\n  - [x] 홈 페이지 UI\n  - [x] 모임 목록 페이지 UI (주최/참여 탭 분리)\n  - [x] 모임 생성 페이지 폼 UI\n  - [x] 프로필 페이지 기본 구조\n  - [x] 로그인/회원가입 페이지 UI\n  - [x] 반응형 모바일 레이아웃\n  - [ ] 카카오 로그인 버튼 UI (로그인/회원가입)\n  - [ ] 프로필 UI 보강 (role 배지, 아바타 미리보기, Textarea)",
+      "verificationCriteria": "tasks/005-auth-profile-ui.md 파일이 존재하며 완료 기준 체크리스트가 올바르게 표시됨",
+      "analysisResult": "Task 005 범위 중 미완성 항목만 구현. 홈/모임 목록/모임 생성/기본 프로필/로그인 UI는 이미 완성 상태. 남은 작업: (1) 카카오 로그인 버튼 UI 추가 (2) 프로필 UI 보강 (3) 작업 파일 생성. 기존 Google OAuth 패턴과 shadcn/ui 컴포넌트를 최대한 재사용.",
+      "summary": "tasks/005-auth-profile-ui.md 생성 완료. 002-types.md 포맷 참고하여 개요 및 완료 기준 체크리스트 작성. 이미 완성된 6개 항목 [x] 체크, 미완성 2개(카카오 버튼 UI, 프로필 보강) [ ] 표시.",
+      "completedAt": "2026-06-04T11:32:34.443Z"
+    },
+    {
+      "id": "5a619682-60f9-4ff8-a5f3-5c65464ba13a",
+      "name": "Task 005-B: 카카오 로그인 버튼 UI 추가",
+      "description": "login-form.tsx와 sign-up-form.tsx에 카카오 로그인 버튼 UI를 추가한다. 기존 Google OAuth 버튼 패턴(handleGoogleLogin + isGoogleLoading)을 그대로 따르며, 카카오 공식 브랜드 색상(#FEE500 배경, #000000 텍스트)을 적용한다. 실제 Supabase 카카오 OAuth 연동은 Phase 3(Task 011)에서 수행하므로 이 작업은 UI만 추가한다.",
+      "notes": "카카오 SVG: 공식 카카오 심볼 - 말풍선 형태의 간단한 path. viewBox='0 0 24 24'. fill='#000000'. Button variant prop은 사용하지 말고 className으로 스타일 직접 지정.",
+      "status": "completed",
+      "dependencies": [
+        {
+          "taskId": "78b3eb4e-3241-4349-9039-340c476f9f7a"
+        }
+      ],
+      "createdAt": "2026-06-04T11:30:39.093Z",
+      "updatedAt": "2026-06-04T11:35:37.689Z",
+      "relatedFiles": [
+        {
+          "path": "components/login-form.tsx",
+          "type": "TO_MODIFY",
+          "description": "카카오 로그인 버튼 추가",
+          "lineStart": 1,
+          "lineEnd": 188
+        },
+        {
+          "path": "components/sign-up-form.tsx",
+          "type": "TO_MODIFY",
+          "description": "카카오 로그인 버튼 추가",
+          "lineStart": 1,
+          "lineEnd": 199
+        },
+        {
+          "path": "lib/supabase/client.ts",
+          "type": "DEPENDENCY",
+          "description": "브라우저용 Supabase 클라이언트"
+        }
+      ],
+      "implementationGuide": "login-form.tsx 수정:\n1. isKakaoLoading state 추가 (useState<boolean>)\n2. handleKakaoLogin 함수 추가:\n   - createClient() 호출\n   - setIsKakaoLoading(true), setError(null)\n   - supabase.auth.signInWithOAuth({ provider: 'kakao', options: { redirectTo: window.location.origin + '/auth/callback' } })\n   - catch: setError, setIsKakaoLoading(false)\n3. Google 버튼 아래에 카카오 버튼 추가:\n   - Button type='button' onClick={handleKakaoLogin}\n   - className에 bg-[#FEE500] text-[#000000] hover:bg-[#FDD835] border-0 추가\n   - disabled: isKakaoLoading || isLoading || isGoogleLoading\n   - 카카오 SVG 아이콘 (말풍선 심볼) + 'Login with Kakao' 텍스트\n4. 기존 모든 버튼 disabled 조건에 isKakaoLoading 추가\n\nsign-up-form.tsx: login-form.tsx와 동일 패턴 적용 ('Sign up with Kakao')",
+      "verificationCriteria": "1. /auth/login 페이지에서 카카오 버튼이 노란 배경으로 표시됨\n2. /auth/sign-up 페이지에서 카카오 버튼이 노란 배경으로 표시됨\n3. 버튼 클릭 시 isKakaoLoading 상태로 전환됨\n4. Google/이메일 로딩 중 카카오 버튼 비활성화됨",
+      "analysisResult": "Task 005 범위 중 미완성 항목만 구현. 홈/모임 목록/모임 생성/기본 프로필/로그인 UI는 이미 완성 상태. 남은 작업: (1) 카카오 로그인 버튼 UI 추가 (2) 프로필 UI 보강 (3) 작업 파일 생성. 기존 Google OAuth 패턴과 shadcn/ui 컴포넌트를 최대한 재사용.",
+      "summary": "login-form.tsx, sign-up-form.tsx에 카카오 로그인 버튼 UI 추가 완료. #FEE500 배경 노란색, 검은 텍스트, 말풍선 SVG 아이콘 적용. Google 버튼과 동일한 isKakaoLoading 패턴으로 로딩 상태 관리. 모든 버튼 간 상호 비활성화 조건 적용.",
+      "completedAt": "2026-06-04T11:35:37.659Z"
+    },
+    {
+      "id": "6c0ebb6d-d100-4f7a-adee-0d0bfe03d36b",
+      "name": "Task 005-C: 프로필 페이지 UI 보강",
+      "description": "profile-form.tsx를 보강한다. role 필드를 읽기 전용 Badge로 표시하고, avatar_url 입력 시 실시간 Avatar 미리보기를 제공하며, bio 필드의 raw textarea를 shadcn/ui Textarea 컴포넌트로 교체한다. 기존 updateProfile Server Action 및 getProfile은 수정하지 않는다.",
+      "notes": "avatar_url Input은 onChange로 avatarPreview 업데이트하되, form의 name='avatar_url'은 유지해야 useActionState + formAction 패턴이 정상 동작함. defaultValue는 제거하고 value={} + onChange로 controlled input 전환 — 단, formAction이 input value를 FormData로 수집하므로 controlled여도 정상 동작.",
+      "status": "completed",
+      "dependencies": [
+        {
+          "taskId": "78b3eb4e-3241-4349-9039-340c476f9f7a"
+        }
+      ],
+      "createdAt": "2026-06-04T11:30:39.093Z",
+      "updatedAt": "2026-06-04T11:35:46.103Z",
+      "relatedFiles": [
+        {
+          "path": "components/profile-form.tsx",
+          "type": "TO_MODIFY",
+          "description": "프로필 폼 UI 보강",
+          "lineStart": 1,
+          "lineEnd": 118
+        },
+        {
+          "path": "components/ui/avatar.tsx",
+          "type": "DEPENDENCY",
+          "description": "Avatar 컴포넌트"
+        },
+        {
+          "path": "components/ui/textarea.tsx",
+          "type": "DEPENDENCY",
+          "description": "Textarea 컴포넌트"
+        },
+        {
+          "path": "components/ui/badge.tsx",
+          "type": "DEPENDENCY",
+          "description": "Badge 컴포넌트"
+        },
+        {
+          "path": "app/protected/profile/actions.ts",
+          "type": "REFERENCE",
+          "description": "수정하지 않음 - 참고용"
+        },
+        {
+          "path": "types/database.types.ts",
+          "type": "REFERENCE",
+          "description": "Profile 타입 확인 (role 필드)"
+        }
+      ],
+      "implementationGuide": "profile-form.tsx 수정:\n1. import 추가: Textarea(components/ui/textarea), Avatar/AvatarImage/AvatarFallback(components/ui/avatar), Badge(components/ui/badge)\n2. avatarPreview state 추가: useState<string>(profile.avatar_url ?? '')\n3. role → Badge variant 매핑:\n   - admin: 'destructive'\n   - host: 'default'\n   - member: 'secondary'\n4. 폼 상단에 Avatar 미리보기 섹션 추가:\n   - Avatar size lg (w-16 h-16)\n   - AvatarImage src={avatarPreview} alt='프로필 미리보기'\n   - AvatarFallback: username 첫 글자 또는 '?'\n5. avatar_url Input에 onChange 핸들러 추가: (e) => setAvatarPreview(e.target.value)\n6. bio 필드: raw textarea → shadcn Textarea 컴포넌트로 교체\n7. role 표시 섹션 추가 (폼 하단, submit 버튼 위):\n   - Label '계정 역할'\n   - Badge variant={roleVariant} {role 한국어 텍스트}\n   - 읽기 전용 안내 텍스트 '역할은 관리자에 의해 변경됩니다'\n\n역할 한국어: admin='관리자', host='호스트', member='회원'",
+      "verificationCriteria": "1. 프로필 페이지에서 아바타 URL 입력 시 실시간 미리보기 표시\n2. role이 한국어 Badge로 표시됨 (admin=파괴적, host=기본, member=보조)\n3. bio 필드가 shadcn Textarea로 렌더링됨\n4. 프로필 저장 기능이 기존과 동일하게 동작함",
+      "analysisResult": "Task 005 범위 중 미완성 항목만 구현. 홈/모임 목록/모임 생성/기본 프로필/로그인 UI는 이미 완성 상태. 남은 작업: (1) 카카오 로그인 버튼 UI 추가 (2) 프로필 UI 보강 (3) 작업 파일 생성. 기존 Google OAuth 패턴과 shadcn/ui 컴포넌트를 최대한 재사용.",
+      "summary": "profile-form.tsx 보강 완료. Avatar 미리보기(avatarPreview state + onChange), bio raw textarea → shadcn Textarea 교체, role 읽기 전용 Badge(admin=destructive, host=default, member=secondary) 및 안내 텍스트 추가. updateProfile Server Action은 수정하지 않음.",
+      "completedAt": "2026-06-04T11:35:46.077Z"
+    },
+    {
+      "id": "35ae9a2c-6b61-4868-a006-c4e300d4cc6c",
+      "name": "Task 005-D: Task 005 완료 처리 및 ROADMAP 업데이트",
+      "description": "tasks/005-auth-profile-ui.md의 모든 체크리스트를 완료 처리하고, docs/ROADMAP.md에서 Task 005를 ✅ 완료로 표시한다.",
+      "status": "completed",
+      "dependencies": [
+        {
+          "taskId": "5a619682-60f9-4ff8-a5f3-5c65464ba13a"
+        },
+        {
+          "taskId": "6c0ebb6d-d100-4f7a-adee-0d0bfe03d36b"
+        }
+      ],
+      "createdAt": "2026-06-04T11:30:39.093Z",
+      "updatedAt": "2026-06-04T11:36:17.248Z",
+      "relatedFiles": [
+        {
+          "path": "tasks/005-auth-profile-ui.md",
+          "type": "TO_MODIFY",
+          "description": "체크리스트 완료 처리"
+        },
+        {
+          "path": "docs/ROADMAP.md",
+          "type": "TO_MODIFY",
+          "description": "Task 005 완료 표시"
+        }
+      ],
+      "implementationGuide": "1. tasks/005-auth-profile-ui.md: 모든 [ ] 항목을 [x]로 변경\n2. docs/ROADMAP.md: 'Task 005: 인증/프로필 및 모임 목록·생성 UI 구현' 항목에 ✅ 추가\n3. git commit: '📝 docs: Task 005 완료 표시 - ROADMAP.md 업데이트'",
+      "verificationCriteria": "ROADMAP.md에서 Task 005가 ✅로 표시되고, tasks/005-auth-profile-ui.md의 모든 항목이 [x] 체크됨",
+      "analysisResult": "Task 005 범위 중 미완성 항목만 구현. 홈/모임 목록/모임 생성/기본 프로필/로그인 UI는 이미 완성 상태. 남은 작업: (1) 카카오 로그인 버튼 UI 추가 (2) 프로필 UI 보강 (3) 작업 파일 생성. 기존 Google OAuth 패턴과 shadcn/ui 컴포넌트를 최대한 재사용.",
+      "summary": "tasks/005-auth-profile-ui.md 모든 체크리스트 [x] 완료 처리. docs/ROADMAP.md Task 005에 ✅ 완료 표시 추가. Task 005 전체 완료.",
+      "completedAt": "2026-06-04T11:36:17.232Z"
+    }
+  ]
+}

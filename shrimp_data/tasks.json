@@ -251,6 +251,345 @@
       "analysisResult": "Task 008: MeetUp Manager Phase 3 첫 번째 작업. Supabase DB 마이그레이션(6개 테이블) + RLS 정책 적용 + 모임 CRUD Server Actions 구현(F001~F004) + 더미 데이터 교체. 인증 패턴은 profile/actions.ts 재사용. edit/new 폼은 별도 Client Component(FormWrapper) 분리하여 useActionState 에러 피드백 제공. 각 단계 완료 후 사용자 확인 후 진행.",
       "summary": "npm run build 성공(24개 페이지 정적 생성). 빌드 에러 원인(랜딩 페이지 cacheComponents 충돌)을 auth 체크 제거로 해결. Playwright E2E 전 시나리오 통과: 빈 제목 에러 메시지, 모임 생성→상세 redirect, 기존 데이터 폼 바인딩, 수정 반영, 삭제 후 목록 이동. 보안 어드바이저 RLS 경고 0건. 성능 어드바이저의 auth_rls_initplan 경고를 008_rls_performance_optimization 마이그레이션으로 해결(auth.uid() → select auth.uid() 패턴 전체 적용).",
       "completedAt": "2026-06-05T04:04:28.566Z"
+    },
+    {
+      "id": "9e81236c-6dad-4285-862d-1bc4c1416079",
+      "name": "Task 009 작업 파일 생성",
+      "description": "tasks/009-announcements-participants.md 파일을 생성한다. tasks/008-database-crud.md 형식을 참조하여 완료 기준(빈 체크박스), 관련 파일, 구현 단계, 테스트 체크리스트를 포함한다.",
+      "notes": "빈 체크박스([ ])만 사용. 변경 사항 요약 없음. tasks/000-sample.md 초기 상태 참조",
+      "status": "pending",
+      "dependencies": [],
+      "createdAt": "2026-06-06T06:44:41.512Z",
+      "updatedAt": "2026-06-06T06:44:41.512Z",
+      "relatedFiles": [
+        {
+          "path": "tasks/009-announcements-participants.md",
+          "type": "CREATE",
+          "description": "Task 009 작업 파일"
+        },
+        {
+          "path": "tasks/008-database-crud.md",
+          "type": "REFERENCE",
+          "description": "파일 형식 참조용 직전 완료 태스크"
+        }
+      ],
+      "implementationGuide": "tasks/008-database-crud.md 구조를 참조하여 작성:\n- 완료 기준: 빈 체크박스 항목들 (tasks 파일 생성, Server Actions 구현 항목별, Client Components 생성 항목별, 더미 데이터 교체, 빌드 성공, E2E 테스트)\n- 관련 파일: 신규 생성 목록 + 수정 대상 목록 + 참조 파일 목록\n- 구현 단계: Step 1~6\n- 테스트 체크리스트: Playwright MCP 시나리오",
+      "verificationCriteria": "tasks/009-announcements-participants.md 파일이 생성되고, 빈 체크박스 완료 기준 항목, 관련 파일 목록, 구현 단계, 테스트 체크리스트가 포함되어 있음",
+      "analysisResult": "Task 009 공지(F005~F006) 및 참여자 관리(F007~F008) 기능 구현. 기존 더미 데이터를 실제 Supabase 쿼리로 교체하고, 스켈레톤 Server Actions를 완전 구현하며, 버튼들을 활성화하는 Client Components를 생성함. 기존 패턴(getClaims→권한검증→DB→revalidatePath, useActionState+useFormStatus, bind 패턴)을 완전 재사용."
+    },
+    {
+      "id": "8014dab5-41fc-4eab-88e4-5701e40a0bd5",
+      "name": "공지 및 참여자 조회 Server Actions 추가",
+      "description": "app/protected/events/[eventId]/actions.ts에 getAnnouncements(eventId)와 getParticipants(eventId) 조회 함수를 추가한다. 참여자 조회 시 profiles 테이블을 join하여 표시 이름도 함께 반환한다.",
+      "notes": "프로필 join은 supabase .select('*, profiles(id, username, full_name, avatar_url)') 패턴 사용. profiles 테이블의 RLS가 활성화되어 있으므로 정상 동작 여부 빌드 후 테스트 필요",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "9e81236c-6dad-4285-862d-1bc4c1416079"
+        }
+      ],
+      "createdAt": "2026-06-06T06:44:41.512Z",
+      "updatedAt": "2026-06-06T06:44:41.512Z",
+      "relatedFiles": [
+        {
+          "path": "app/protected/events/[eventId]/actions.ts",
+          "type": "TO_MODIFY",
+          "description": "조회 함수 추가",
+          "lineStart": 1,
+          "lineEnd": 35
+        },
+        {
+          "path": "types/database.types.ts",
+          "type": "REFERENCE",
+          "description": "EventAnnouncement, EventParticipant 타입",
+          "lineStart": 47,
+          "lineEnd": 90
+        },
+        {
+          "path": "app/protected/profile/actions.ts",
+          "type": "REFERENCE",
+          "description": "getClaims 인증 패턴"
+        }
+      ],
+      "implementationGuide": "getAnnouncements(eventId: string):\n  supabase = createClient()\n  getClaims() → 인증 확인\n  SELECT * FROM event_announcements WHERE event_id=eventId ORDER BY is_pinned DESC, created_at DESC\n  반환: EventAnnouncement[]\n\ngetParticipants(eventId: string):\n  supabase = createClient()\n  getClaims() → 인증 확인\n  SELECT *, profiles(id, username, full_name, avatar_url) FROM event_participants WHERE event_id=eventId ORDER BY joined_at ASC\n  반환: (EventParticipant & { profiles: Profile | null })[]",
+      "verificationCriteria": "getAnnouncements, getParticipants 함수가 추가되고 TypeScript 타입 오류 없음. npm run type-check 통과",
+      "analysisResult": "Task 009 공지(F005~F006) 및 참여자 관리(F007~F008) 기능 구현. 기존 더미 데이터를 실제 Supabase 쿼리로 교체하고, 스켈레톤 Server Actions를 완전 구현하며, 버튼들을 활성화하는 Client Components를 생성함. 기존 패턴(getClaims→권한검증→DB→revalidatePath, useActionState+useFormStatus, bind 패턴)을 완전 재사용."
+    },
+    {
+      "id": "52571c57-7b6e-412a-9960-71186fedc9e6",
+      "name": "공지 관리 Server Actions 구현",
+      "description": "createAnnouncement, deleteAnnouncement, togglePin Server Actions를 완전 구현한다. 모두 Host 전용이며 권한 검증 필수.",
+      "notes": "deleteAnnouncement, togglePin은 void 반환(기존 스켈레톤 시그니처 유지). createAnnouncement는 AnnouncementFormState 반환 후 성공 시 redirect",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "8014dab5-41fc-4eab-88e4-5701e40a0bd5"
+        }
+      ],
+      "createdAt": "2026-06-06T06:44:41.512Z",
+      "updatedAt": "2026-06-06T06:44:41.512Z",
+      "relatedFiles": [
+        {
+          "path": "app/protected/events/[eventId]/actions.ts",
+          "type": "TO_MODIFY",
+          "description": "공지 관리 스켈레톤 구현",
+          "lineStart": 189,
+          "lineEnd": 221
+        },
+        {
+          "path": "types/database.types.ts",
+          "type": "REFERENCE",
+          "description": "AnnouncementFormState 타입",
+          "lineStart": 135,
+          "lineEnd": 138
+        }
+      ],
+      "implementationGuide": "createAnnouncement(eventId: string, prevState: AnnouncementFormState, formData: FormData):\n  getClaims() → userId\n  events 테이블에서 host_id 조회 → userId !== host_id → return error\n  title = formData.get('title').trim() → 빈 값이면 error\n  content = formData.get('content').trim() → 빈 값이면 error\n  is_pinned = formData.get('is_pinned') === 'on'\n  INSERT event_announcements {event_id, author_id: userId, title, content, is_pinned}\n  revalidatePath('/protected/events/' + eventId)\n  redirect('/protected/events/' + eventId + '?tab=announcements')\n\ndeleteAnnouncement(announcementId: string, eventId: string):\n  getClaims() → userId\n  events 테이블에서 host_id 조회 → 권한 확인\n  DELETE FROM event_announcements WHERE id=announcementId\n  revalidatePath('/protected/events/' + eventId)\n\ntogglePin(announcementId: string, eventId: string):\n  getClaims() → userId\n  Host 권한 확인\n  SELECT is_pinned FROM event_announcements WHERE id=announcementId\n  UPDATE event_announcements SET is_pinned=!currentValue WHERE id=announcementId\n  revalidatePath('/protected/events/' + eventId)",
+      "verificationCriteria": "createAnnouncement, deleteAnnouncement, togglePin이 완전 구현됨. Host가 아닌 사용자 접근 시 에러 반환. npm run type-check 통과",
+      "analysisResult": "Task 009 공지(F005~F006) 및 참여자 관리(F007~F008) 기능 구현. 기존 더미 데이터를 실제 Supabase 쿼리로 교체하고, 스켈레톤 Server Actions를 완전 구현하며, 버튼들을 활성화하는 Client Components를 생성함. 기존 패턴(getClaims→권한검증→DB→revalidatePath, useActionState+useFormStatus, bind 패턴)을 완전 재사용."
+    },
+    {
+      "id": "94ef77a0-2154-43d8-9327-2463b438d6f6",
+      "name": "참여자 관리 Server Actions 구현",
+      "description": "joinEvent, cancelParticipation, approveParticipant, rejectParticipant Server Actions를 완전 구현한다. 정원 초과 waitlisted 처리, 취소 시 대기자 자동 승급 로직 포함.",
+      "notes": "joinEvent에서 status='pending'으로 insert (Host 승인 방식). 자동 승인 없음. 동시성 race condition은 낙관적 처리(Task 012에서 개선 가능). 함수 시그니처는 기존 스켈레톤과 동일하게 유지",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "8014dab5-41fc-4eab-88e4-5701e40a0bd5"
+        }
+      ],
+      "createdAt": "2026-06-06T06:44:41.512Z",
+      "updatedAt": "2026-06-06T06:44:41.512Z",
+      "relatedFiles": [
+        {
+          "path": "app/protected/events/[eventId]/actions.ts",
+          "type": "TO_MODIFY",
+          "description": "참여자 관리 스켈레톤 구현",
+          "lineStart": 159,
+          "lineEnd": 187
+        },
+        {
+          "path": "types/database.types.ts",
+          "type": "REFERENCE",
+          "description": "ParticipationFormState, EventParticipant 타입",
+          "lineStart": 48,
+          "lineEnd": 68
+        }
+      ],
+      "implementationGuide": "joinEvent(eventId: string, prevState: ParticipationFormState, formData: FormData):\n  getClaims() → userId\n  중복 신청 확인: SELECT * FROM event_participants WHERE event_id=eventId AND user_id=userId AND status IN ('pending','approved','waitlisted')\n  중복 있으면 error 반환\n  이벤트 max_capacity 조회\n  approved 인원 수 조회: COUNT(*) WHERE event_id=eventId AND status='approved'\n  status = (max_capacity == null OR approvedCount < max_capacity) ? 'pending' : 'waitlisted'\n  INSERT event_participants {event_id: eventId, user_id: userId, status, payment_done: false}\n  revalidatePath 3곳\n\ncancelParticipation(participantId: string, eventId: string, prevState, formData):\n  getClaims() → userId\n  SELECT status FROM event_participants WHERE id=participantId AND user_id=userId (본인 확인)\n  wasApproved = currentStatus === 'approved'\n  UPDATE status='cancelled' WHERE id=participantId\n  if wasApproved: SELECT id FROM event_participants WHERE event_id=eventId AND status='waitlisted' ORDER BY joined_at ASC LIMIT 1\n    if found: UPDATE status='pending' WHERE id=waitlistFirst.id\n  revalidatePath 3곳\n\napproveParticipant(participantId: string, eventId: string, prevState, formData):\n  getClaims() → userId\n  Host 권한 확인\n  max_capacity 조회, approved 인원 수 조회\n  정원 초과 시 error 반환\n  UPDATE status='approved' WHERE id=participantId\n  revalidatePath 2곳\n\nrejectParticipant(participantId: string, eventId: string, prevState, formData):\n  getClaims() → userId\n  Host 권한 확인\n  UPDATE status='rejected' WHERE id=participantId\n  revalidatePath 2곳",
+      "verificationCriteria": "joinEvent(waitlisted 포함), cancelParticipation(대기자 승급 포함), approveParticipant, rejectParticipant가 완전 구현됨. 정원 초과 시 waitlisted 처리. npm run type-check 통과",
+      "analysisResult": "Task 009 공지(F005~F006) 및 참여자 관리(F007~F008) 기능 구현. 기존 더미 데이터를 실제 Supabase 쿼리로 교체하고, 스켈레톤 Server Actions를 완전 구현하며, 버튼들을 활성화하는 Client Components를 생성함. 기존 패턴(getClaims→권한검증→DB→revalidatePath, useActionState+useFormStatus, bind 패턴)을 완전 재사용."
+    },
+    {
+      "id": "2013eee7-3630-40d5-a762-9dbf0d5780b2",
+      "name": "참여자 관련 Client Components 생성",
+      "description": "JoinButton(참여 신청/취소), ParticipantActions(호스트용 승인/거절) Client Components를 생성한다. 기존 useActionState+useFormStatus 패턴 사용.",
+      "notes": "기존 event-create-form.tsx의 SubmitButton(useFormStatus) 패턴 그대로 재사용. bind 패턴으로 eventId/participantId 전달",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "94ef77a0-2154-43d8-9327-2463b438d6f6"
+        }
+      ],
+      "createdAt": "2026-06-06T06:44:41.512Z",
+      "updatedAt": "2026-06-06T06:44:41.512Z",
+      "relatedFiles": [
+        {
+          "path": "components/events/join-button.tsx",
+          "type": "CREATE",
+          "description": "참여 신청/취소 Client Component"
+        },
+        {
+          "path": "components/events/participant-actions.tsx",
+          "type": "CREATE",
+          "description": "호스트용 승인/거절 Client Component"
+        },
+        {
+          "path": "components/events/event-create-form.tsx",
+          "type": "REFERENCE",
+          "description": "useActionState+useFormStatus 패턴 참조"
+        },
+        {
+          "path": "types/database.types.ts",
+          "type": "REFERENCE",
+          "description": "ParticipantStatus, ParticipationFormState"
+        }
+      ],
+      "implementationGuide": "components/events/join-button.tsx (\"use client\"):\n  props: eventId: string, myStatus: ParticipantStatus | null, participantId: string | null\n  myStatus === null: form with joinEvent.bind(null, eventId) → useActionState → '참여 신청' 버튼\n  myStatus === 'pending': form with cancelParticipation.bind(null, participantId, eventId) → '신청 취소 (승인 대기 중)' 버튼\n  myStatus === 'approved': form with cancelParticipation.bind(null, participantId, eventId) → '참여 중 (취소)' 버튼\n  myStatus === 'waitlisted': form with cancelParticipation.bind(null, participantId, eventId) → '대기자 등록됨 (취소)' 버튼\n  state.message가 있으면 에러 메시지 표시\n  useFormStatus로 pending 시 disabled\n\ncomponents/events/participant-actions.tsx (\"use client\"):\n  props: participantId: string, eventId: string\n  두 개의 form: approveParticipant.bind(null, participantId, eventId), rejectParticipant.bind(null, participantId, eventId)\n  각각 useActionState + SubmitButton(useFormStatus)\n  에러 시 메시지 표시",
+      "verificationCriteria": "JoinButton, ParticipantActions 컴포넌트 생성. TypeScript 오류 없음. npm run type-check 통과",
+      "analysisResult": "Task 009 공지(F005~F006) 및 참여자 관리(F007~F008) 기능 구현. 기존 더미 데이터를 실제 Supabase 쿼리로 교체하고, 스켈레톤 Server Actions를 완전 구현하며, 버튼들을 활성화하는 Client Components를 생성함. 기존 패턴(getClaims→권한검증→DB→revalidatePath, useActionState+useFormStatus, bind 패턴)을 완전 재사용."
+    },
+    {
+      "id": "1bdfe0e8-d6a7-4680-9703-75eb4650a3e9",
+      "name": "공지 관련 Client Components 생성",
+      "description": "AnnouncementActions(삭제/핀 고정), AnnouncementForm(공지 작성 폼) Client Components를 생성한다.",
+      "notes": "deleteAnnouncement와 togglePin은 void 반환이므로 useActionState 없이 form action으로 직접 연결. 또는 startTransition 사용 고려. deleteAnnouncement 삭제 후 redirect는 Server Action 내에서 처리하지 않고 revalidatePath로만 처리(페이지 갱신)",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "52571c57-7b6e-412a-9960-71186fedc9e6"
+        }
+      ],
+      "createdAt": "2026-06-06T06:44:41.512Z",
+      "updatedAt": "2026-06-06T06:44:41.512Z",
+      "relatedFiles": [
+        {
+          "path": "components/events/announcement-actions.tsx",
+          "type": "CREATE",
+          "description": "공지 삭제/핀 고정 Client Component"
+        },
+        {
+          "path": "components/events/announcement-form.tsx",
+          "type": "CREATE",
+          "description": "공지 작성 폼 Client Component"
+        },
+        {
+          "path": "components/events/event-create-form.tsx",
+          "type": "REFERENCE",
+          "description": "폼 패턴 참조"
+        },
+        {
+          "path": "app/protected/events/[eventId]/announcements/new/page.tsx",
+          "type": "REFERENCE",
+          "description": "기존 UI 구조 참조"
+        }
+      ],
+      "implementationGuide": "components/events/announcement-actions.tsx (\"use client\"):\n  props: announcementId: string, eventId: string, isPinned: boolean\n  두 개의 form(각각 별도):\n    deleteAnnouncement.bind(null, announcementId, eventId) → Trash2 아이콘 버튼\n    togglePin.bind(null, announcementId, eventId) → Pin 아이콘 버튼 (isPinned에 따라 색상 분기)\n  useFormStatus for pending\n\ncomponents/events/announcement-form.tsx (\"use client\"):\n  props: eventId: string\n  createAnnouncement.bind(null, eventId) → useActionState\n  Input(title), Textarea(content), Checkbox(is_pinned name='is_pinned')\n  SubmitButton(useFormStatus) → '공지 등록'\n  취소 버튼 → Link to /protected/events/${eventId}?tab=announcements\n  state.message 에러 표시",
+      "verificationCriteria": "AnnouncementActions, AnnouncementForm 컴포넌트 생성. TypeScript 오류 없음. npm run type-check 통과",
+      "analysisResult": "Task 009 공지(F005~F006) 및 참여자 관리(F007~F008) 기능 구현. 기존 더미 데이터를 실제 Supabase 쿼리로 교체하고, 스켈레톤 Server Actions를 완전 구현하며, 버튼들을 활성화하는 Client Components를 생성함. 기존 패턴(getClaims→권한검증→DB→revalidatePath, useActionState+useFormStatus, bind 패턴)을 완전 재사용."
+    },
+    {
+      "id": "5c6b1040-e9fd-4204-9462-32788a956872",
+      "name": "상세 페이지 더미 데이터 교체 및 Client Components 연결",
+      "description": "app/protected/events/[eventId]/page.tsx에서 참여자/공지 더미 데이터를 실제 Supabase 쿼리로 교체하고, JoinButton/ParticipantActions/AnnouncementActions Client Components를 연결하여 버튼을 활성화한다. 정산/카풀 더미 데이터는 유지한다.",
+      "notes": "participants.profiles가 null일 수 있으므로 optional chaining 사용. ParticipantBadge의 profile prop 타입과 호환되는지 확인 필요. 기존 getDummySettlement, getDummyCarpools, getDummyUser(카풀탭) import는 유지",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "2013eee7-3630-40d5-a762-9dbf0d5780b2"
+        },
+        {
+          "taskId": "1bdfe0e8-d6a7-4680-9703-75eb4650a3e9"
+        }
+      ],
+      "createdAt": "2026-06-06T06:44:41.512Z",
+      "updatedAt": "2026-06-06T06:44:41.512Z",
+      "relatedFiles": [
+        {
+          "path": "app/protected/events/[eventId]/page.tsx",
+          "type": "TO_MODIFY",
+          "description": "더미 데이터 교체 및 Client Components 연결",
+          "lineStart": 1,
+          "lineEnd": 526
+        },
+        {
+          "path": "components/events/participant-badge.tsx",
+          "type": "REFERENCE",
+          "description": "profile prop 타입 확인"
+        },
+        {
+          "path": "components/events/join-button.tsx",
+          "type": "DEPENDENCY",
+          "description": "신규 생성 컴포넌트"
+        },
+        {
+          "path": "components/events/participant-actions.tsx",
+          "type": "DEPENDENCY",
+          "description": "신규 생성 컴포넌트"
+        },
+        {
+          "path": "components/events/announcement-actions.tsx",
+          "type": "DEPENDENCY",
+          "description": "신규 생성 컴포넌트"
+        },
+        {
+          "path": "lib/dummy/participants.ts",
+          "type": "REFERENCE",
+          "description": "교체 전 더미 함수 목록 확인"
+        },
+        {
+          "path": "lib/dummy/announcements.ts",
+          "type": "REFERENCE",
+          "description": "교체 전 더미 함수 목록 확인"
+        }
+      ],
+      "implementationGuide": "page.tsx (Server Component) 변경사항:\n  import 추가: getAnnouncements, getParticipants\n  import 추가: JoinButton, ParticipantActions, AnnouncementActions\n  import 제거: getDummyParticipants, getDummyAnnouncements, getDummyMyStatus, getDummyApprovedCount, getDummyUser (참여자/공지 관련만)\n\n  EventDetailPage에서:\n    participants = await getParticipants(eventId)\n    announcements = await getAnnouncements(eventId)\n    approved = participants.filter(p => p.status === 'approved')\n    approvedCount = approved.length\n    myParticipant = participants.find(p => p.user_id === currentUserId)\n    myStatus = myParticipant?.status ?? null\n\n  InfoTab props 추가: participants, myParticipant, announcements 대신 계산된 값 전달\n\n  InfoTab 내부:\n    approvedCount, myStatus 실제 데이터 사용\n    참여 신청 버튼 섹션: <JoinButton eventId participantId={myParticipant?.id ?? null} myStatus={myStatus} />\n    참여자 목록: participant.profiles에서 profile 정보 가져옴 (getDummyUser 제거)\n    호스트 승인 대기: <ParticipantActions participantId={p.id} eventId={eventId} />\n\n  AnnouncementsTab:\n    announcements props 받아서 표시\n    삭제 버튼: <AnnouncementActions announcementId={ann.id} eventId={eventId} isPinned={ann.is_pinned} />\n\n  정산 탭(SettlementTab), 카풀 탭(CarpoolTab): 기존 더미 데이터 유지",
+      "verificationCriteria": "page.tsx에서 참여자/공지 관련 더미 import 제거됨. JoinButton, ParticipantActions, AnnouncementActions 연결됨. 정산/카풀 더미 유지. npm run type-check + npm run lint 통과",
+      "analysisResult": "Task 009 공지(F005~F006) 및 참여자 관리(F007~F008) 기능 구현. 기존 더미 데이터를 실제 Supabase 쿼리로 교체하고, 스켈레톤 Server Actions를 완전 구현하며, 버튼들을 활성화하는 Client Components를 생성함. 기존 패턴(getClaims→권한검증→DB→revalidatePath, useActionState+useFormStatus, bind 패턴)을 완전 재사용."
+    },
+    {
+      "id": "ed1e219f-40dd-40ef-aeb4-ba06e7bcf078",
+      "name": "공지 작성 페이지 Server Action 연결",
+      "description": "app/protected/events/[eventId]/announcements/new/page.tsx의 정적 form을 AnnouncementForm Client Component로 교체하여 createAnnouncement Server Action을 연결한다.",
+      "notes": "Host 권한 확인을 Server Component 레벨에서 수행하여 비호스트 접근 차단. AnnouncementForm에는 eventId만 전달하면 됨",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "1bdfe0e8-d6a7-4680-9703-75eb4650a3e9"
+        }
+      ],
+      "createdAt": "2026-06-06T06:44:41.512Z",
+      "updatedAt": "2026-06-06T06:44:41.512Z",
+      "relatedFiles": [
+        {
+          "path": "app/protected/events/[eventId]/announcements/new/page.tsx",
+          "type": "TO_MODIFY",
+          "description": "AnnouncementForm 연결",
+          "lineStart": 1,
+          "lineEnd": 75
+        },
+        {
+          "path": "components/events/announcement-form.tsx",
+          "type": "DEPENDENCY",
+          "description": "신규 생성 컴포넌트"
+        },
+        {
+          "path": "app/protected/events/[eventId]/actions.ts",
+          "type": "DEPENDENCY",
+          "description": "getEvent 함수"
+        }
+      ],
+      "implementationGuide": "새로운 page.tsx:\n  Server Component 유지\n  params에서 eventId 추출\n  Host 권한 확인 (getEvent로 host_id 조회, 비호스트이면 notFound() or redirect)\n  AnnouncementForm Client Component import 및 렌더링:\n    <AnnouncementForm eventId={eventId} />\n  기존 Link, h1 등 상단 레이아웃 유지",
+      "verificationCriteria": "공지 작성 페이지에서 제목/내용 입력 후 제출 시 DB에 저장되고 공지 탭으로 이동. Host가 아닌 사용자 접근 시 차단",
+      "analysisResult": "Task 009 공지(F005~F006) 및 참여자 관리(F007~F008) 기능 구현. 기존 더미 데이터를 실제 Supabase 쿼리로 교체하고, 스켈레톤 Server Actions를 완전 구현하며, 버튼들을 활성화하는 Client Components를 생성함. 기존 패턴(getClaims→권한검증→DB→revalidatePath, useActionState+useFormStatus, bind 패턴)을 완전 재사용."
+    },
+    {
+      "id": "a46fce74-0fed-4ac5-9d3a-c7e487a4e296",
+      "name": "빌드 검증 및 E2E 테스트",
+      "description": "타입 체크, 린트, 프로덕션 빌드를 검증하고 Playwright MCP로 공지 작성/핀 고정 및 참여 신청→승인→대기자 승급 플로우를 E2E 테스트한다.",
+      "notes": "E2E 테스트에서 두 번째 사용자 계정이 없으면 호스트 본인의 joinEvent는 실제로 불가할 수 있음. 실현 가능한 범위의 테스트 시나리오 우선 실행",
+      "status": "pending",
+      "dependencies": [
+        {
+          "taskId": "5c6b1040-e9fd-4204-9462-32788a956872"
+        },
+        {
+          "taskId": "ed1e219f-40dd-40ef-aeb4-ba06e7bcf078"
+        }
+      ],
+      "createdAt": "2026-06-06T06:44:41.512Z",
+      "updatedAt": "2026-06-06T06:44:41.512Z",
+      "relatedFiles": [
+        {
+          "path": "app/protected/events/[eventId]/page.tsx",
+          "type": "REFERENCE",
+          "description": "최종 검증 대상"
+        },
+        {
+          "path": "app/protected/events/[eventId]/announcements/new/page.tsx",
+          "type": "REFERENCE",
+          "description": "최종 검증 대상"
+        },
+        {
+          "path": "app/protected/events/[eventId]/actions.ts",
+          "type": "REFERENCE",
+          "description": "최종 검증 대상"
+        }
+      ],
+      "implementationGuide": "1. npm run type-check → 오류 수정\n2. npm run lint → 오류 수정\n3. npm run build → 빌드 성공 확인\n\nPlaywright MCP 테스트:\n공지 플로우:\n  로그인 → 모임 상세 → 공지 탭 → 공지 작성 → 내용 입력 → 제출 → 공지 목록에 표시 확인\n  핀 고정 버튼 클릭 → 상단 고정 확인\n  삭제 버튼 클릭 → 목록에서 제거 확인\n\n참여자 플로우:\n  (2번째 계정 없으므로 같은 계정으로 호스트/멤버 상태 시뮬레이션 or 실제 테스트 가능 범위 내)\n  모임 상세 → 정보 탭 → 참여 신청 버튼 클릭 → pending 상태 확인\n  호스트로 승인 → approved 상태 확인\n  참여자 취소 → cancelled 상태 확인\n\nSupabase 검증:\n  get_advisors(security) → RLS 경고 없음\n  get_logs(postgres) → DB 오류 없음",
+      "verificationCriteria": "npm run build 성공. Playwright E2E 테스트: 공지 CRUD, 핀 고정/해제, 참여 신청 플로우 통과. tasks/009-announcements-participants.md 완료 기준 체크박스 업데이트",
+      "analysisResult": "Task 009 공지(F005~F006) 및 참여자 관리(F007~F008) 기능 구현. 기존 더미 데이터를 실제 Supabase 쿼리로 교체하고, 스켈레톤 Server Actions를 완전 구현하며, 버튼들을 활성화하는 Client Components를 생성함. 기존 패턴(getClaims→권한검증→DB→revalidatePath, useActionState+useFormStatus, bind 패턴)을 완전 재사용."
     }
   ]
 }
