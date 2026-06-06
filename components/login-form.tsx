@@ -16,6 +16,22 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+function translateAuthError(message: string): string {
+  if (
+    message.includes("Invalid login credentials") ||
+    message.includes("invalid_credentials")
+  )
+    return "이메일 또는 비밀번호가 올바르지 않습니다.";
+  if (message.includes("Email not confirmed"))
+    return "이메일 인증이 완료되지 않았습니다. 받은 메일함을 확인해 주세요.";
+  if (message.includes("Too many requests"))
+    return "로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.";
+  if (message.includes("User not found")) return "가입되지 않은 이메일입니다.";
+  if (message.includes("network") || message.includes("fetch"))
+    return "네트워크 오류가 발생했습니다. 다시 시도해 주세요.";
+  return message || "로그인 중 오류가 발생했습니다.";
+}
+
 export function LoginForm({
   className,
   ...props
@@ -42,7 +58,7 @@ export function LoginForm({
       if (error) throw error;
       router.push("/protected");
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      setError(translateAuthError(error instanceof Error ? error.message : ""));
     } finally {
       setIsLoading(false);
     }

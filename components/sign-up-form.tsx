@@ -16,6 +16,22 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+function translateAuthError(message: string): string {
+  if (message.includes("User already registered"))
+    return "이미 가입된 이메일입니다. 로그인해 주세요.";
+  if (message.includes("Password should be at least"))
+    return "비밀번호는 최소 6자 이상이어야 합니다.";
+  if (message.includes("Unable to validate email address"))
+    return "유효하지 않은 이메일 주소입니다.";
+  if (message.includes("Signup requires a valid password"))
+    return "유효한 비밀번호를 입력해 주세요.";
+  if (message.includes("Email rate limit exceeded"))
+    return "잠시 후 다시 시도해 주세요. (요청 한도 초과)";
+  if (message.includes("network") || message.includes("fetch"))
+    return "네트워크 오류가 발생했습니다. 다시 시도해 주세요.";
+  return message || "회원가입 중 오류가 발생했습니다.";
+}
+
 export function SignUpForm({
   className,
   ...props
@@ -42,7 +58,7 @@ export function SignUpForm({
     }
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -50,9 +66,13 @@ export function SignUpForm({
         },
       });
       if (error) throw error;
+      if (data.user && data.user.identities?.length === 0) {
+        setError("이미 가입된 이메일입니다. 로그인해 주세요.");
+        return;
+      }
       router.push("/auth/sign-up-success");
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      setError(translateAuthError(error instanceof Error ? error.message : ""));
     } finally {
       setIsLoading(false);
     }
