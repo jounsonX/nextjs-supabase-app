@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { MapPin, Calendar, DollarSign, Pin, Car } from "lucide-react";
+import { MapPin, Calendar, DollarSign, Pin, Car, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
@@ -103,22 +103,28 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
   return (
     <div className="flex flex-col">
       {/* 헤더 */}
-      <div className="flex items-start justify-between p-4 pb-2">
-        <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 p-4 pb-2">
+        <div className="flex items-center justify-between">
           <Link
             href="/protected/events"
             className="text-muted-foreground hover:text-foreground text-sm"
           >
             ← 모임 목록
           </Link>
-          <h1 className="text-xl font-bold">{event.title}</h1>
-          <StatusBadge type="event" status={event.status} />
+          {isHost && (
+            <Button asChild variant="ghost" size="icon" className="-mt-1 -mr-1">
+              <Link href={`/protected/events/${eventId}/edit`}>
+                <Pencil size={16} />
+              </Link>
+            </Button>
+          )}
         </div>
-        {isHost && (
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/protected/events/${eventId}/edit`}>수정</Link>
-          </Button>
-        )}
+        <h1 className="text-xl font-bold">
+          {event.title}
+          <span className="ml-2 inline-flex shrink-0 align-middle">
+            <StatusBadge type="event" status={event.status} />
+          </span>
+        </h1>
       </div>
 
       {/* 탭 네비게이션 */}
