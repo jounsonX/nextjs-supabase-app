@@ -1,17 +1,33 @@
 import Link from "next/link";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { getEvent } from "@/app/protected/events/[eventId]/actions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AnnouncementForm } from "@/components/events/announcement-form";
 
 type Props = {
   params: Promise<{ eventId: string }>;
 };
 
+/**
+ * 공지 작성 페이지
+ * - 호스트만 접근 가능 (서버에서 권한 검증)
+ */
 export default async function NewAnnouncementPage({ params }: Props) {
   const { eventId } = await params;
+
+  // 모임 조회
+  const event = await getEvent(eventId);
+  if (!event) redirect("/protected/events");
+
+  // 현재 사용자 확인 — 호스트가 아니면 상세 페이지로 리다이렉트
+  const supabase = await createClient();
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const currentUserId = claimsData?.claims?.sub ?? null;
+
+  if (!currentUserId || event.host_id !== currentUserId) {
+    redirect(`/protected/events/${eventId}?tab=announcements`);
+  }
 
   return (
     <div className="p-4">
@@ -29,45 +45,7 @@ export default async function NewAnnouncementPage({ params }: Props) {
           <CardTitle className="text-base">공지 내용 입력</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* TODO: Phase 3 — createAnnouncement Server Action 연결 */}
-          <form className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="title">공지 제목 *</Label>
-              <Input
-                id="title"
-                name="title"
-                placeholder="공지 제목을 입력하세요"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="content">내용 *</Label>
-              <Textarea
-                id="content"
-                name="content"
-                rows={6}
-                placeholder="공지 내용을 입력하세요"
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Checkbox id="is_pinned" name="is_pinned" />
-              <Label htmlFor="is_pinned" className="cursor-pointer">
-                상단 고정
-              </Label>
-            </div>
-
-            <div className="mt-2 flex gap-2">
-              <Button type="submit" className="flex-1">
-                공지 등록
-              </Button>
-              <Button asChild variant="outline" className="flex-1">
-                <Link href={`/protected/events/${eventId}?tab=announcements`}>
-                  취소
-                </Link>
-              </Button>
-            </div>
-          </form>
+          <AnnouncementForm eventId={eventId} />
         </CardContent>
       </Card>
     </div>

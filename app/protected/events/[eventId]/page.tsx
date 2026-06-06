@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { MapPin, Calendar, DollarSign, Pin, Car, Trash2 } from "lucide-react";
+import { MapPin, Calendar, DollarSign, Pin, Car } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,18 +8,22 @@ import { StatusBadge } from "@/components/events/status-badge";
 import { CapacityDisplay } from "@/components/events/capacity-display";
 import { ParticipantBadge } from "@/components/events/participant-badge";
 import { CarpoolRegisterButton } from "@/components/events/carpool-register-button";
+import { AnnouncementActions } from "@/components/events/announcement-actions";
+import { JoinButton } from "@/components/events/join-button";
+import { ParticipantManageRow } from "@/components/events/participant-manage-row";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
-import { getEvent } from "@/app/protected/events/[eventId]/actions";
 import {
-  getDummyParticipants,
-  getDummyAnnouncements,
-  getDummyCarpools,
-  getDummySettlement,
-  getDummyMyStatus,
-  getDummyApprovedCount,
-  getDummyUser,
-} from "@/lib/dummy";
+  getEvent,
+  getAnnouncements,
+} from "@/app/protected/events/[eventId]/actions";
+import type {
+  EventAnnouncement,
+  EventParticipant,
+  Profile,
+  ParticipantStatus,
+} from "@/types/database.types";
+import { getDummyCarpools, getDummySettlement } from "@/lib/dummy";
 
 type Props = {
   params: Promise<{ eventId: string }>;
@@ -50,19 +54,51 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
   const { tab } = await searchParams;
   const activeTab = tab ?? "info";
 
-  // 실제 Supabase에서 모임 데이터 조회
+  // 모임 데이터 조회
   const event = await getEvent(eventId);
   if (!event) notFound();
 
-  // 현재 로그인 사용자로 isHost 판별
+  // 현재 로그인 사용자 확인
   const supabase = await createClient();
   const { data: claimsData } = await supabase.auth.getClaims();
   const currentUserId = claimsData?.claims?.sub ?? null;
   const isHost = currentUserId !== null && event.host_id === currentUserId;
 
-  // 참여자/정산 데이터는 Task 009~010에서 교체 예정 — 더미 유지
-  const myStatus = getDummyMyStatus(eventId);
-  const approvedCount = getDummyApprovedCount(eventId);
+  // ── 참여자 데이터 (실제 DB) ──────────────────────────────────────────────────
+  const { data: participants } = await supabase
+    .from("event_participants")
+    .select("*")
+    .eq("event_id", eventId)
+    .not("status", "in", '("cancelled","rejected")')
+    .order("joined_at", { ascending: true });
+
+  const allParticipants: EventParticipant[] = participants ?? [];
+  const approvedParticipants = allParticipants.filter(
+    (p) => p.status === "approved"
+  );
+  const approvedCount = approvedParticipants.length;
+
+  // 현재 사용자의 참여 상태 및 ID
+  const myParticipant = currentUserId
+    ? (allParticipants.find((p) => p.user_id === currentUserId) ?? null)
+    : null;
+  const myStatus: ParticipantStatus | null = myParticipant?.status ?? null;
+
+  // 참여자 프로필 일괄 조회
+  const participantUserIds = allParticipants.map((p) => p.user_id);
+  let profileMap: Record<string, Profile> = {};
+
+  if (participantUserIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("*")
+      .in("id", participantUserIds);
+
+    profileMap = Object.fromEntries((profiles ?? []).map((p) => [p.id, p]));
+  }
+
+  // ── 공지 데이터 (실제 DB, 탭이 announcements일 때만 또는 항상 조회) ──────────
+  const announcements: EventAnnouncement[] = await getAnnouncements(eventId);
 
   return (
     <div className="flex flex-col">
@@ -111,14 +147,26 @@ export default async function EventDetailPage({ params, searchParams }: Props) {
             eventId={eventId}
             approvedCount={approvedCount}
             myStatus={myStatus}
+            myParticipantId={myParticipant?.id}
             isHost={isHost}
+            allParticipants={allParticipants}
+            profileMap={profileMap}
           />
         )}
         {activeTab === "announcements" && (
-          <AnnouncementsTab eventId={eventId} isHost={isHost} />
+          <AnnouncementsTab
+            eventId={eventId}
+            isHost={isHost}
+            announcements={announcements}
+          />
         )}
         {activeTab === "settlement" && (
-          <SettlementTab eventId={eventId} isHost={isHost} />
+          <SettlementTab
+            eventId={eventId}
+            isHost={isHost}
+            approvedParticipants={approvedParticipants}
+            profileMap={profileMap}
+          />
         )}
         {activeTab === "carpool" && (
           <CarpoolTab eventId={eventId} isHost={isHost} />
@@ -135,7 +183,10 @@ function InfoTab({
   eventId,
   approvedCount,
   myStatus,
+  myParticipantId,
   isHost,
+  allParticipants,
+  profileMap,
 }: {
   event: {
     event_date: string | null;
@@ -146,11 +197,17 @@ function InfoTab({
   };
   eventId: string;
   approvedCount: number;
-  myStatus: ReturnType<typeof getDummyMyStatus>;
+  myStatus: ParticipantStatus | null;
+  myParticipantId?: string;
   isHost: boolean;
+  allParticipants: EventParticipant[];
+  profileMap: Record<string, Profile>;
 }) {
-  const participants = getDummyParticipants(eventId);
-  const approved = participants.filter((p) => p.status === "approved");
+  const approvedList = allParticipants.filter((p) => p.status === "approved");
+  const pendingList = allParticipants.filter((p) => p.status === "pending");
+  const waitlistedList = allParticipants.filter(
+    (p) => p.status === "waitlisted"
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -199,46 +256,36 @@ function InfoTab({
         </CardContent>
       </Card>
 
-      {/* 참여 신청 버튼 */}
+      {/* 비호스트: 참여 신청/취소 버튼 */}
       {!isHost && (
-        <div>
-          {myStatus === null && (
-            <Button className="w-full" disabled>
-              참여 신청
-            </Button>
-          )}
-          {myStatus === "pending" && (
-            <Button className="w-full" variant="outline" disabled>
-              신청 취소 (승인 대기 중)
-            </Button>
-          )}
-          {myStatus === "approved" && (
-            <Button className="w-full" variant="secondary" disabled>
-              참여 중
-            </Button>
-          )}
-          {myStatus === "waitlisted" && (
-            <Button className="w-full" variant="outline" disabled>
-              대기자 등록됨
-            </Button>
-          )}
-        </div>
+        <JoinButton
+          eventId={eventId}
+          myStatus={myStatus}
+          participantId={myParticipantId}
+        />
       )}
 
-      {/* 참여자 목록 */}
-      <div>
-        <h3 className="mb-2 text-sm font-semibold">
-          참여자 ({approvedCount}명)
-        </h3>
-        {approved.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            아직 승인된 참여자가 없습니다.
-          </p>
-        ) : (
+      {/* 승인된 참여자 목록 */}
+      {approvedList.length > 0 && (
+        <div>
+          <h3 className="mb-2 text-sm font-semibold">
+            참여자 ({approvedCount}명)
+          </h3>
           <div className="flex flex-col gap-2">
-            {approved.slice(0, 5).map((p) => {
-              const profile = getDummyUser(p.user_id);
+            {approvedList.slice(0, 5).map((p) => {
+              const profile = profileMap[p.user_id];
               if (!profile) return null;
+              // 호스트: 승인된 참여자에게도 거절 버튼 표시
+              if (isHost) {
+                return (
+                  <ParticipantManageRow
+                    key={p.id}
+                    participantId={p.id}
+                    profile={profile}
+                    status={p.status}
+                  />
+                );
+              }
               return (
                 <ParticipantBadge
                   key={p.id}
@@ -247,60 +294,60 @@ function InfoTab({
                 />
               );
             })}
-            {approved.length > 5 && (
+            {approvedList.length > 5 && (
               <p className="text-muted-foreground text-sm">
-                외 {approved.length - 5}명
+                외 {approvedList.length - 5}명
               </p>
             )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* 호스트: 신청자 관리 */}
-      {isHost &&
-        (() => {
-          const pending = participants.filter((p) => p.status === "pending");
-          if (pending.length === 0) return null;
-          return (
-            <div>
-              <h3 className="mb-2 text-sm font-semibold">
-                승인 대기 ({pending.length}명)
-              </h3>
-              <div className="flex flex-col gap-2">
-                {pending.map((p) => {
-                  const profile = getDummyUser(p.user_id);
-                  if (!profile) return null;
-                  return (
-                    <div
-                      key={p.id}
-                      className="flex items-center justify-between"
-                    >
-                      <ParticipantBadge profile={profile} status={p.status} />
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs"
-                          disabled
-                        >
-                          승인
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 text-xs"
-                          disabled
-                        >
-                          거절
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })()}
+      {/* 호스트: 대기 신청자 관리 */}
+      {isHost && pendingList.length > 0 && (
+        <div>
+          <h3 className="mb-2 text-sm font-semibold">
+            승인 대기 ({pendingList.length}명)
+          </h3>
+          <div className="flex flex-col gap-2">
+            {pendingList.map((p) => {
+              const profile = profileMap[p.user_id];
+              if (!profile) return null;
+              return (
+                <ParticipantManageRow
+                  key={p.id}
+                  participantId={p.id}
+                  profile={profile}
+                  status={p.status}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 호스트: 대기자 목록 */}
+      {isHost && waitlistedList.length > 0 && (
+        <div>
+          <h3 className="mb-2 text-sm font-semibold">
+            대기자 ({waitlistedList.length}명)
+          </h3>
+          <div className="flex flex-col gap-2">
+            {waitlistedList.map((p) => {
+              const profile = profileMap[p.user_id];
+              if (!profile) return null;
+              return (
+                <ParticipantManageRow
+                  key={p.id}
+                  participantId={p.id}
+                  profile={profile}
+                  status={p.status}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -310,12 +357,12 @@ function InfoTab({
 function AnnouncementsTab({
   eventId,
   isHost,
+  announcements,
 }: {
   eventId: string;
   isHost: boolean;
+  announcements: EventAnnouncement[];
 }) {
-  const announcements = getDummyAnnouncements(eventId);
-
   return (
     <div className="flex flex-col gap-4">
       {isHost && (
@@ -350,15 +397,12 @@ function AnnouncementsTab({
                         day: "numeric",
                       })}
                     </span>
+                    {/* 호스트 전용: 핀 토글 + 삭제 버튼 */}
                     {isHost && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 p-0"
-                        disabled
-                      >
-                        <Trash2 size={13} />
-                      </Button>
+                      <AnnouncementActions
+                        announcementId={ann.id}
+                        isPinned={ann.is_pinned}
+                      />
                     )}
                   </div>
                 </div>
@@ -380,14 +424,21 @@ function AnnouncementsTab({
 function SettlementTab({
   eventId,
   isHost,
+  approvedParticipants,
+  profileMap,
 }: {
   eventId: string;
   isHost: boolean;
+  approvedParticipants: EventParticipant[];
+  profileMap: Record<string, Profile>;
 }) {
+  // 정산 데이터는 Task 010에서 실제 DB 연동 예정 — 더미 유지
   const settlement = getDummySettlement(eventId);
-  const participants = getDummyParticipants(eventId).filter(
-    (p) => p.status === "approved"
-  );
+  // 승인된 참여자 수/납부 현황은 실제 데이터 사용
+  const approvedCount = approvedParticipants.length;
+  const paidCount = approvedParticipants.filter((p) => p.payment_done).length;
+  const perPerson =
+    approvedCount > 0 ? Math.ceil(settlement.total_cost / approvedCount) : 0;
 
   return (
     <div className="flex flex-col gap-4">
@@ -403,27 +454,27 @@ function SettlementTab({
           <div>
             <p className="text-muted-foreground text-xs">1인당</p>
             <p className="text-primary mt-0.5 text-lg font-bold">
-              {settlement.per_person.toLocaleString("ko-KR")}원
+              {perPerson.toLocaleString("ko-KR")}원
             </p>
           </div>
           <div>
             <p className="text-muted-foreground text-xs">납부 현황</p>
             <p className="mt-0.5 font-semibold">
-              {settlement.paid_count}/{settlement.approved_count}명
+              {paidCount}/{approvedCount}명
             </p>
           </div>
         </CardContent>
       </Card>
 
       {/* 참여자별 납부 현황 */}
-      {participants.length === 0 ? (
+      {approvedParticipants.length === 0 ? (
         <p className="text-muted-foreground text-sm">
           승인된 참여자가 없습니다.
         </p>
       ) : (
         <div className="flex flex-col gap-2">
-          {participants.map((p) => {
-            const profile = getDummyUser(p.user_id);
+          {approvedParticipants.map((p) => {
+            const profile = profileMap[p.user_id];
             if (!profile) return null;
             return (
               <div key={p.id} className="flex items-center justify-between">
@@ -456,6 +507,7 @@ function SettlementTab({
 // ─── 카풀 탭 ────────────────────────────────────────────────────────────────
 
 function CarpoolTab({ eventId, isHost }: { eventId: string; isHost: boolean }) {
+  // 카풀 데이터는 Task 010에서 실제 DB 연동 예정 — 더미 유지
   const carpools = getDummyCarpools(eventId);
 
   return (
@@ -467,57 +519,45 @@ function CarpoolTab({ eventId, isHost }: { eventId: string; isHost: boolean }) {
         <p className="text-muted-foreground text-sm">등록된 카풀이 없습니다.</p>
       ) : (
         <div className="flex flex-col gap-3">
-          {carpools.map((carpool) => {
-            const driver = getDummyUser(carpool.driver_id);
-            return (
-              <Card key={carpool.id}>
-                <CardContent className="p-4">
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <Car size={16} className="text-muted-foreground" />
-                        <span className="text-sm font-medium">
-                          {carpool.departure}
-                        </span>
-                      </div>
-                      <span
-                        className={cn(
-                          "text-sm font-semibold",
-                          carpool.remaining_seats === 0
-                            ? "text-muted-foreground line-through"
-                            : "text-primary"
-                        )}
-                      >
-                        잔여 {carpool.remaining_seats}석
+          {carpools.map((carpool) => (
+            <Card key={carpool.id}>
+              <CardContent className="p-4">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <Car size={16} className="text-muted-foreground" />
+                      <span className="text-sm font-medium">
+                        {carpool.departure}
                       </span>
                     </div>
-                    {driver && (
-                      <ParticipantBadge
-                        profile={driver}
-                        status="approved"
-                        showStatus={false}
-                      />
-                    )}
-                    {carpool.note && (
-                      <p className="text-muted-foreground text-xs">
-                        {carpool.note}
-                      </p>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="mt-1 w-full"
-                      disabled={carpool.remaining_seats === 0}
+                    <span
+                      className={cn(
+                        "text-sm font-semibold",
+                        carpool.remaining_seats === 0
+                          ? "text-muted-foreground line-through"
+                          : "text-primary"
+                      )}
                     >
-                      {carpool.remaining_seats === 0
-                        ? "자리 없음"
-                        : "동승 신청"}
-                    </Button>
+                      잔여 {carpool.remaining_seats}석
+                    </span>
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                  {carpool.note && (
+                    <p className="text-muted-foreground text-xs">
+                      {carpool.note}
+                    </p>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-1 w-full"
+                    disabled={carpool.remaining_seats === 0}
+                  >
+                    {carpool.remaining_seats === 0 ? "자리 없음" : "동승 신청"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
     </div>
